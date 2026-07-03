@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57d22e94555e2364c832d96770b6a04d, type: 3}
+  m_Name: Item_DeerAntler
+  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Core.ItemDef
+  Id: item_deer_antler
+  DisplayName: "\uC0AC\uC2B4 \uBFD4"
+  Rarity: 1
+  SellPrice: 30

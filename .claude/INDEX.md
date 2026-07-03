@@ -37,6 +37,11 @@ C#/.NET 언어 핵심 및 메모리 최적화.
 - **keywords:** profiling, GC, garbage collection, batching, draw call, SRP Batcher, texture compression, ASTC, audio compression, Canvas, Raycast Target, LOD, Occlusion Culling, shadow, lightmap, frame budget, thermal throttle, Update loop, object pool
 - **when to read:** 프레임 드랍·GC 스파이크·빌드 용량 등 성능 이슈 조사 시, 90Hz 유지가 걸린 코드/에셋 설정 변경 시
 
+### [knowledge/unity-editor-automation.md](knowledge/unity-editor-automation.md)
+ClaudeBridge 스택 — Claude가 Unity Editor 작업(에셋 생성, 씬 조작, 컴파일 확인)을 직접 수행하는 방법.
+- **keywords:** ClaudeBridge, bridge, inbox, outbox, unity_call, batch, headless, Editor 자동화, 씬 조작, GameObject 생성, 컴파일 확인, 임포트 경합, CS0246, rsp, scriptCompilationFailed, 병렬 에이전트
+- **when to read:** Unity Editor 조작이 필요한 작업 시 (에셋/씬/프리팹 생성, Play Mode 확인, 컴파일 검증). `/make-assets`·`/run` 스킬과 연계
+
 ### [knowledge/debugging/](knowledge/debugging/) — 디버깅 원칙 (per-file)
 디버깅 방법론 원칙 10개.
 - **keywords:** debugging, assumption, classify, Bohrbug, Heisenbug, symptom, root cause, fix, log, Debug.Log, print debugging, assertion, Assert, binary split, bisect
