@@ -51,8 +51,42 @@ QA 방법론 원칙 10개. 이 프로젝트(VR·인디) 맥락으로 적용.
 
 ## Level 2 — Project Domain (이 프로젝트 전용)
 
-> 현재 비어 있음 — Camp Lantern은 신규 프로젝트이며 GDD가 아직 없다.
-> GDD/도메인 문서가 추가되면 여기에 파일 링크와 `keywords`를 등록한다. 구조는 [domain/README.md](domain/README.md) 참조.
+GDD: [domain/gdd/VR_코지_소셜_영지_게임_기획서.docx](domain/gdd/VR_코지_소셜_영지_게임_기획서.docx) (원본, .docx라 Read 불가 — 아래 distilled 문서를 통해 참조)
+
+### [domain/tech-stack-decisions.md](domain/tech-stack-decisions.md)
+GDD엔 없는 세션 결정 사항 — Photon Fusion 2 vs PUN 2, Meta Avatars SDK(EOF v40.0.1), 영구 저장 백엔드 미정.
+- **keywords:** Photon, Fusion, PUN, Voice, App Id, 넷코드, netcode, Meta Avatars, EOF, 백엔드, backend, 서버 DB, 패키지 버전, manifest.json
+- **when to read:** 네트워킹/멀티플레이 코드, 아바타 시스템, 저장소 관련 작업 착수 전
+
+### [domain/room-architecture.md](domain/room-architecture.md)
+Photon Room 공간 구조 — 로비/낚시터/사냥터/영지 4개 공간, 저장 데이터와 실시간 Room 분리.
+- **keywords:** Room, roomName, estate_, 로비, 낚시터, 사냥터, 존 분할, zone, 샤딩, sharding, 마스터 클라이언트, 서버 권한, authoritative, 파티 연속성, 오프라인 방문
+- **when to read:** 씬 전환, 매칭, Room 생성/파괴, 파티 시스템 관련 작업 시
+
+### [domain/estate-system.md](domain/estate-system.md)
+영지 시스템 — 배치, 구매 방식, 캠프 수용량, 방문 권한, 오브젝트 카테고리.
+- **keywords:** 영지, estate, 캠프 수용량, 배치, placement, 스냅, snap, 읽기 전용, 공동 편집자, 오브젝트 카테고리, 등급, 일반, 희귀, 에픽, 확장, 상한
+- **when to read:** 영지 배치/편집 UX, 오브젝트 카테고리 추가, 성능 상한(수용량) 관련 작업 시
+
+### [domain/resource-loop.md](domain/resource-loop.md)
+낚시/요리/사냥 — 활동별 역할, 밸런스 원칙, 조작 상세.
+- **keywords:** 낚시, fishing, 요리, cooking, 사냥, hunting, 레시피, recipe, 챔질, 릴링, 조합, 숙련도, 만찬, 도감, 트로피, 재료
+- **when to read:** 자원 채집/가공/사냥 활동 구현, 재화 소스 밸런스 조정 시
+
+### [domain/social-cooperation.md](domain/social-cooperation.md)
+협동 유도 4단계 구조, Shared Ledger(공유 진행도) 규칙.
+- **keywords:** 협동, Shared Ledger, 공유 진행도, 기여, 파티, party, 다구리, 재접속, 복원, 방문 보너스, 공용 시설
+- **when to read:** 협동 이벤트, 파티 진행도 동기화, 재접속 복원 로직 구현 시
+
+### [domain/mvp-scope.md](domain/mvp-scope.md)
+MVP 단계 게이트(P0/P1/P2), 검증 지표, 착수 금지 목록.
+- **keywords:** MVP, P0, P1, P2, 프로토타입, prototype, 검증 지표, 통과 기준, 로드맵, roadmap, 범위 제외, UGC, 우선순위
+- **when to read:** **새 기능/시스템 착수 전 항상** — 해당 기능이 어느 단계인지, 착수 금지 목록에 있는지 확인
+
+### [domain/economy.md](domain/economy.md)
+재화 구조(코인+지정 재료), 소스-싱크, 수익화 모델.
+- **keywords:** 코인, 재화, currency, 소스, 싱크, source, sink, 소프트 캡, soft cap, DLC, 수익화, 유료, IAP, 가격
+- **when to read:** 재화 획득/소비 로직, 상점, 가격 책정, 유료 콘텐츠 설계 시
 
 ---
 

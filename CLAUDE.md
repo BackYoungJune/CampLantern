@@ -4,9 +4,9 @@
 
 ## 프로젝트 개요
 
-**Camp Lantern** — Unity 6000.3.10f1(Unity 6) 기반 VR 프로젝트. 현재는 신규 프로젝트 초기 상태로, Oculus 샘플 에셋과 플레이스홀더 스크립트(`Assets/Scripts/Test.cs`) 외에 실제 게임 코드는 아직 없다.
+**Camp Lantern** — Unity 6000.3.10f1(Unity 6) 기반 **VR 코지 소셜 영지 게임** (Meta Quest 타겟). 유저가 캠핑 영지를 소유하고 낚시·요리·사냥으로 얻은 자원으로 영지를 꾸미며, 협동·방문·공유 진행도(Shared Ledger)로 소셜 플레이를 유도한다. 수익화는 프리미엄(1회 구매) + DLC.
 
-기획서(GDD)는 추후 전달 예정. GDD와 실제 아키텍처가 들어오면 이 섹션과 아래 `불변 제약`·`아키텍처` 관련 내용을 그 시점에 채운다. 지금은 스텁 상태를 유지한다.
+GDD 원본: `.claude/domain/gdd/VR_코지_소셜_영지_게임_기획서.docx` (.docx라 직접 Read 불가). **시스템별 정리는 `.claude/domain/*.md`에 있으며 `.claude/INDEX.md` Level 2로 라우팅한다.** 실제 게임 코드는 아직 없음 (`Assets/Scripts/Test.cs` 플레이스홀더 상태) — P0 프로토타입부터 착수 예정.
 
 ## 불변 제약 (Inviolable Constraints)
 
@@ -51,7 +51,13 @@
 
 ## 아키텍처
 
-아직 정해진 아키텍처가 없다 (신규 프로젝트, `Assets/Scripts/Test.cs` 플레이스홀더만 존재). GDD와 실제 시스템(씬 구성, 매니저 구조, 데이터 모델, 네트워킹 등)이 확정되면 이 섹션에 채운다.
+코드 레벨 아키텍처(매니저 구조, 데이터 모델)는 아직 미확정. 공간/네트워크 구조는 GDD 8장에서 확정됨:
+
+- **4개 공간**: 로비(싱글) / 낚시터(드롭인 멀티) / 사냥터(존 분할) / 영지(`estate_{userID}`, 오프라인 방문 가능) — 상세는 `.claude/domain/room-architecture.md`
+- **넷코드**: Photon Fusion 2 (서버 권한 모델 — 영지 주인 오프라인 요구사항 때문에 PUN 2 배제). 음성은 Photon Voice 2. 선택 근거는 `.claude/domain/tech-stack-decisions.md`
+- **영구 저장 백엔드**: 미정 (자체 서버 방향, 추후 결정) — 영지 저장·Shared Ledger 복원 구현은 백엔드 확정 후 착수
+
+코드 아키텍처가 정해지는 대로 이 섹션에 추가한다.
 
 ## 코드 컨벤션
 
@@ -60,8 +66,12 @@
 
 ## 주요 패키지
 
-프로젝트 초기 상태의 `Packages/manifest.json`을 참고. Meta(Oculus) XR 관련 샘플 에셋이 `Assets/Oculus/`에 포함되어 있다.
+- **Meta XR SDK 슈트 — 전부 203.0.0으로 버전 통일** (`core`, `haptics`, `interaction.ovr`, `platform`). 새 Meta XR 패키지 추가 시 반드시 203.0.0에 맞출 것 — 슈트 버전이 섞이면 내부 API 호환이 깨진다.
+- **Meta Avatars SDK 40.0.1** — EOF(End-of-Feature) 최종 버전. 버전 번호가 203.x 트레인과 다른 게 정상이며 업데이트하면 안 됨 (더 높은 버전이 존재하지 않음).
+- **Photon Fusion 2 / Voice 2** — `.unitypackage`로 `Assets/Photon/`에 임포트됨 (UPM 아님). App ID는 `Fusion > Real Time Settings`의 `PhotonAppSettings` 에셋에 저장 (App Id Fusion / App Id Voice 두 필드).
+- 나머지는 `Packages/manifest.json` 참고. Oculus 샘플 에셋은 `Assets/Oculus/`.
 
 ## 플랫폼 노트
 
-- 타겟 플랫폼 미확정. Oculus(Meta Quest) 샘플이 포함되어 있어 VR/XR 프로젝트로 시작하는 것으로 보이나, 실제 타겟(Quest 단독인지 PICO/SteamVR도 포함하는지)은 GDD 확정 후 여기에 기록한다.
+- **타겟: Meta Quest** (GDD 확정 — 성능 기준, Quest 스토어 매출 벤치마크, 캠프 수용량 등 Quest 전제로 설계됨). PCVR 확장은 GDD 15-2에서 장기 검토 사항으로만 언급.
+- 성능 목표: 90Hz 유지 (`.claude/rules/scripts.md`, `knowledge/unity-mobile-performance.md` 참고).
