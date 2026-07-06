@@ -1,0 +1,2 @@
+[console_scripts]
+claude-bridge-mcp = claude_bridge_mcp.server:main
