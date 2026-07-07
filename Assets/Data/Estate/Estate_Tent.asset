@@ -19,4 +19,4 @@ MonoBehaviour:
   RequiredMaterial: {fileID: 0}
   RequiredMaterialCount: 0
   CapacityWeight: 3
-  Prefab: {fileID: 0}
+  Prefab: {fileID: 4406844001780135700, guid: f29de3d84fc02e049acd3432309807b6, type: 3}
