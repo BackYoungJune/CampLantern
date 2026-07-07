@@ -164,6 +164,16 @@ namespace CampLantern.EditorTools
             }
         }
 
+        /// <summary>더미 피어 제거 트리거 — VoiceNetworkObject Despawned 경로 재현용.</summary>
+        [MenuItem("Tools/P0 Play Test/Remove Dummy Peer")]
+        public static void RemoveDummyPeer()
+        {
+            var harness = Object.FindFirstObjectByType<P0Harness>();
+            if (harness == null) { Debug.LogError("[P0PlayTest] 하네스 없음"); return; }
+            harness.RemoveDummyPeer();
+            Debug.LogWarning("[P0PlayTest] 더미 제거 요청 전송");
+        }
+
         /// <summary>러너/씬/스폰 상태 스냅샷 — 멀티 피어 문제 진단용.</summary>
         [MenuItem("Tools/P0 Play Test/Report Net State")]
         public static void ReportNetState()

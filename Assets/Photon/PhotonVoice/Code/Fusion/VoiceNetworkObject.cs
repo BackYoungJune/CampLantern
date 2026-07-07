@@ -155,6 +155,9 @@ namespace Photon.Voice.Fusion
 
         public override void Despawned(NetworkRunner runner, bool hasState)
         {
+            // 프로젝트 수정: 무음성 피어(에디터 더미 러너)는 Spawned에서 voiceConnection이 null인 채로
+            // 리턴했으므로 여기서도 동일하게 가드 — 원본은 RemoveRecorder 호출 시 NRE (tech-stack-decisions.md 참조).
+            if (this.voiceConnection == null) return;
             this.voiceConnection.RemoveRecorder(this.RecorderInUse);
         }
 
