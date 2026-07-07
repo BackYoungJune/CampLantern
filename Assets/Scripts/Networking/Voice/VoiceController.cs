@@ -67,6 +67,8 @@ namespace CampLantern.Networking.Voice
             m_recorder = gameObject.AddComponent<Recorder>();
             m_recorder.RecordingEnabled = true;
             m_recorder.TransmitEnabled  = m_micEnabled;
+            // 데스크톱/Quest 마이크는 대부분 48kHz 고정 — 기본값 24kHz면 매 세션 불일치 경고 2종 + 리샘플 비용 발생
+            m_recorder.SamplingRate     = POpusCodec.Enums.SamplingRate.Sampling48000;
 
             // FusionVoiceClient는 NetworkRunner와 같은 GO 필수(RequireComponent) — SessionLauncher가
             // 러너를 자기 GO에 붙이므로 여기도 같은 GO에 부착한다. 다음 Start()의 FollowLeader()가

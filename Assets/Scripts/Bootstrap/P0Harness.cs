@@ -44,6 +44,8 @@ namespace CampLantern.Bootstrap
         [Tooltip("사냥감 스폰 위치")]
         [SerializeField] private Vector3 m_huntSpawnPos = new Vector3(-8f, 0f, 8f);
 
+        private const string k_zoneId = "p0"; // 세션 룸: hunt_zone_p0 — 본체/더미가 같은 값 사용
+
         private Wallet m_wallet;
         private Inventory m_inventory;
         private EstateShop m_shop;
@@ -53,6 +55,15 @@ namespace CampLantern.Bootstrap
 
         private HuntTarget m_huntTarget; // 세션 중 스폰된 사냥감 — Update에서 발견 시 구독
         private HuntLedger m_huntLedger;
+        private readonly List<HuntTarget> m_huntTargetsBuffer = new List<HuntTarget>();
+
+        // 더미 피어 — 같은 에디터에서 2번째 플레이어로 같은 룸에 접속 (NetworkProjectConfig PeerMode: Multiple 필요).
+        // 협동 게이트/기여/보상 테스트용. 음성은 붙이지 않는다 (마이크 이중 캡처 방지).
+        private NetworkRunner m_dummyRunner;
+        private bool m_dummyJoining;
+
+        /// <summary>접속 중인 더미 피어 러너. 없으면 null. (자동 테스트 메뉴에서 사용)</summary>
+        public NetworkRunner DummyRunner => m_dummyRunner;
 
         private bool m_joining;
         private string m_lastLog = "-";
@@ -101,16 +112,31 @@ namespace CampLantern.Bootstrap
             if (m_rod != null) m_rod.FishCaught -= OnFishCaught;
             if (m_pot != null) m_pot.Cooked -= OnCooked;
             UnhookHuntTarget();
+
+            // 더미 피어 연결 누수 방지 — await 불가 지점이므로 동기 킥오프만 (SessionLauncher.OnDestroy와 동일 패턴)
+            if (m_dummyRunner != null && m_dummyRunner.IsRunning)
+                m_dummyRunner.Shutdown();
+            m_dummyRunner = null;
         }
 
         private void Update()
         {
-            // 사냥감은 세션 중 네트워크 스폰이라 씬 참조로 미리 배선 불가 — 등장을 감지해 구독한다
+            // 사냥감은 세션 중 네트워크 스폰이라 씬 참조로 미리 배선 불가 — 등장을 감지해 구독한다.
+            // 멀티 피어 모드에서는 더미 러너의 복제 인스턴스도 씬에 있으므로 반드시 본체 러너 스코프로 찾는다.
             if (m_huntTarget == null && m_launcher != null && m_launcher.Runner != null)
             {
-                var target = FindFirstObjectByType<HuntTarget>();
+                var target = FindHuntTarget(m_launcher.Runner);
                 if (target != null) HookHuntTarget(target);
             }
+        }
+
+        /// <summary>해당 러너에 속한 사냥감 인스턴스를 찾는다 (러너 스코프 — 씬 전역 검색 금지).</summary>
+        public HuntTarget FindHuntTarget(NetworkRunner runner)
+        {
+            if (runner == null) return null;
+            m_huntTargetsBuffer.Clear();
+            runner.GetAllBehaviours(m_huntTargetsBuffer);
+            return m_huntTargetsBuffer.Count > 0 ? m_huntTargetsBuffer[0] : null;
         }
 
         // ── 이벤트 배선 ──────────────────────────────────────────────
@@ -164,7 +190,7 @@ namespace CampLantern.Bootstrap
             m_joining = true;
             try
             {
-                await m_launcher.StartHuntZone("p0", destroyCancellationToken);
+                await m_launcher.StartHuntZone(k_zoneId, destroyCancellationToken);
                 m_lastLog = "세션 접속 완료";
             }
             catch (System.OperationCanceledException) { /* 파괴로 인한 취소 — 정상 */ }
@@ -176,6 +202,69 @@ namespace CampLantern.Bootstrap
             finally
             {
                 m_joining = false;
+            }
+        }
+
+        /// <summary>더미 피어 접속 시작 (fire-and-forget). 본체 세션이 열려 있을 때만 의미 있음.</summary>
+        public void AddDummyPeer()
+        {
+            if (m_dummyRunner != null || m_dummyJoining) return;
+            _ = StartDummyAsync();
+        }
+
+        /// <summary>더미 피어 접속 해제 (fire-and-forget).</summary>
+        public void RemoveDummyPeer()
+        {
+            var runner = m_dummyRunner;
+            m_dummyRunner = null;
+            if (runner != null)
+                _ = runner.Shutdown(); // destroyGameObject 기본 true — DummyPeer GO째 제거
+        }
+
+        private async Task StartDummyAsync()
+        {
+            m_dummyJoining = true;
+            try
+            {
+                // SessionLauncher를 재사용하지 않는 이유: 런처는 자기 GO에 러너를 붙이는 단일 세션 설계라
+                // 더미는 별도 GO에 직접 러너를 구성한다. 룸 이름 규칙만 동일하게 맞춘다 (hunt_zone_{zoneId}).
+                var go = new GameObject("DummyPeer");
+                var runner = go.AddComponent<NetworkRunner>();
+                var sceneManager = go.AddComponent<NetworkSceneManagerDefault>();
+
+                var args = new StartGameArgs
+                {
+                    GameMode                   = GameMode.Shared,
+                    SessionName                = $"hunt_zone_{k_zoneId}",
+                    SceneManager               = sceneManager,
+                    StartGameCancellationToken = destroyCancellationToken,
+                };
+
+                // 멀티 피어 모드는 시작 씬 필수 — 본체와 같은 규칙 (SessionLauncher 헬퍼 참조)
+                NetworkSceneInfo? arenaScene = SessionLauncher.TryGetMultiPeerArenaScene();
+                if (arenaScene.HasValue) args.Scene = arenaScene.Value;
+
+                var result = await runner.StartGame(args);
+
+                if (!result.Ok)
+                {
+                    Destroy(go);
+                    m_lastLog = $"더미 접속 실패: {result.ShutdownReason}";
+                    return;
+                }
+
+                m_dummyRunner = runner;
+                m_lastLog = $"더미 접속 완료 (P{runner.LocalPlayer.PlayerId})";
+            }
+            catch (System.OperationCanceledException) { /* 파괴로 인한 취소 — 정상 */ }
+            catch (System.Exception e)
+            {
+                m_lastLog = $"더미 접속 실패: {e.Message}";
+                Debug.LogException(e, this);
+            }
+            finally
+            {
+                m_dummyJoining = false;
             }
         }
 
@@ -313,6 +402,33 @@ namespace CampLantern.Bootstrap
                     if (GUILayout.Button($"P{player.PlayerId} 음소거 {(muted ? "해제" : "")}"))
                         m_mute.SetMuted(player, !muted);
                 }
+            }
+
+            // 더미 피어 — 같은 룸 2번째 접속으로 협동 게이트/기여/보상 로컬 테스트 (음성 없음)
+            if (m_dummyRunner == null)
+            {
+                GUI.enabled = !m_dummyJoining;
+                if (GUILayout.Button(m_dummyJoining ? "더미 접속 중..." : "더미 플레이어 추가 (2인 테스트)"))
+                    AddDummyPeer();
+                GUI.enabled = true;
+            }
+            else
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"더미: P{m_dummyRunner.LocalPlayer.PlayerId}", GUILayout.Width(80));
+                HuntTarget dummyTarget = FindHuntTarget(m_dummyRunner);
+                if (dummyTarget != null)
+                {
+                    // 더미의 행동은 반드시 더미 러너의 복제 인스턴스 + 더미 PlayerRef로 — 실제 원격 경로(RPC) 검증
+                    if (GUILayout.Button("더미 타격"))
+                        dummyTarget.ApplyHit(m_dummyRunner.LocalPlayer, m_hitDamage);
+                    var dummyLedger = dummyTarget.GetComponent<HuntLedger>();
+                    if (dummyLedger != null && GUILayout.Button("더미 유인"))
+                        dummyLedger.RecordContribution(m_dummyRunner.LocalPlayer, HuntLedger.ContributionKind.Lure);
+                }
+                if (GUILayout.Button("더미 제거"))
+                    RemoveDummyPeer();
+                GUILayout.EndHorizontal();
             }
 
             // 사냥

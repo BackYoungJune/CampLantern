@@ -31,7 +31,7 @@ Voice 2.63(Asset Store)은 Realtime **4** 기반인데 Fusion 2.1은 Realtime **
 - **RT4 전체를 `Assets/Photon/PhotonVoice/PhotonRealtime/Code/`로 이전** (asmdef `PhotonRealtime`). RT5는 원위치 유지. 두 어셈블리는 이름이 달라 공존 가능.
 - 구 lib `Photon3Unity3D.dll`(네임스페이스 `ExitGames.Client.Photon`)과 신 lib `PhotonClient.dll`(`Photon.Client`)은 네임스페이스가 달라 공존 가능 — **둘 다 필요, 둘 다 삭제 금지**.
 - PUN 2/PhotonChat/Voice의 PUN 통합/비-Fusion 데모는 공식 가이드대로 임포트 제외(삭제)됨.
-- `FusionVoiceClient.cs`·`PrefabSpawner.cs`에 Fusion 2.1 호환 수정 있음 (OnReliableDataReceived 시그니처, FusionAppSettings 필드 리플렉션 복사, UseFusionAuthValues 비활성). **Voice 패키지를 업데이트/재임포트하면 이 수정과 폴더 이전이 전부 되돌아가므로 이 섹션 절차를 다시 적용해야 한다.**
+- `FusionVoiceClient.cs`·`PrefabSpawner.cs`에 Fusion 2.1 호환 수정 있음 (OnReliableDataReceived 시그니처, FusionAppSettings 필드 리플렉션 복사, UseFusionAuthValues 비활성). 추가 수정 (2026-07-07): `VoiceNetworkObject.cs` — VoiceConnection 없는 피어(에디터 더미 러너)에서 Spawned NRE 방지 가드, `VoiceFollowClient.cs` — 접속 진행 중 "Voice client is busy" 로그를 Warning→Info 하향. **Voice 패키지를 업데이트/재임포트하면 이 수정과 폴더 이전이 전부 되돌아가므로 이 섹션 절차를 다시 적용해야 한다.**
 
 ### Fusion 위빙 함정 — Meta XR Building Blocks (2026-07-07 발견·해결)
 - Meta XR Core SDK는 Fusion 존재를 감지하면 `Meta.XR.MultiplayerBlocks.Fusion` 어셈블리(NetworkBehaviour 포함)를 자동 컴파일한다. 이 어셈블리가 `NetworkProjectConfig.fusion`의 `AssembliesToWeave`에 없으면 **러너 초기화(NetworkTypesMeta)가 통째로 실패해 모든 세션 접속이 Error**가 된다 (`FusionAnchor has no attribute NetworkStructWeavedAttribute`). 목록에 추가돼 있음 — 지우지 말 것.
@@ -44,6 +44,15 @@ Voice 2.63(Asset Store)은 Realtime **4** 기반인데 Fusion 2.1은 Realtime **
   `VoiceNetworkObject`(VoicePlayer.prefab)의 `Object.StateAuthority`를 경유할 것.
 - NetworkRunner가 런타임 AddComponent라(SessionLauncher) FusionVoiceClient도 세션 시작 **후**
   같은 GO에 부착한다 — 자동 콜백 수집에서 빠지므로 `runner.AddCallbacks(voiceClient)` 필수.
+
+### 에디터 더미 2인 테스트 — Fusion 멀티 피어 3종 세트 (2026-07-07)
+빌드 없이 에디터 한 프로세스에서 2번째 러너(더미 플레이어)를 같은 룸에 붙이려면 셋 다 필요하다:
+1. `NetworkProjectConfig.fusion`: `"PeerMode": 1` (Multiple)
+2. `"EnqueueIncompleteSynchronousSpawns": true` — 멀티 피어는 동기 프리팹 스폰을 거부함
+3. **StartGameArgs.Scene 지정 필수** — 없으면 에러 로그 후 러너는 살지만 **씬 준비 상태가 완료되지 않아 스폰 큐가 무한 대기** (사냥감/음성 아바타가 조용히 안 나타나는 증상). 빈 `P0NetArena.unity`(Build Settings 등록)를 `SessionLauncher.TryGetMultiPeerArenaScene()`이 멀티 피어일 때만 지정 — 싱글 피어(실빌드) 경로 불변.
+- 더미 추가는 P0Harness "더미 플레이어 추가" 버튼 / 자동 검증은 `Tools > P0 Play Test > Run Coop Hunt Test`.
+- 더미 러너에는 음성을 붙이지 않는다 (마이크 이중 캡처·에코 방지) — VoiceNetworkObject 가드가 이를 전제.
+- 부수 함정: PeerMode 변경 등으로 config가 재임포트될 때 프리팹 테이블 참조가 깨질 수 있음 — 증상이 "스폰 무음 실패"면 `Tools > Fusion > Rebuild Prefab Table` 먼저. Play 중에는 재컴파일이 보류되므로 브릿지 자동화 시 Play 종료 후 Refresh.
 
 ## 숨은 규칙 / 암묵지
 - Meta Avatars SDK를 Asset Store에서 검색해도 안 뜨는 게 정상이다 (EOF라 검색 노출이 약함). `developers.meta.com/horizon/downloads/package/meta-avatars-sdk/`에서 직접 받아야 한다.

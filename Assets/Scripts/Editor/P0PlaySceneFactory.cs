@@ -28,8 +28,41 @@ namespace CampLantern.EditorTools
         private const string k_estateFolder   = "Assets/Prefabs/Estate";
         private const string k_materialFolder = "Assets/Prefabs/Materials";
 
+        private const string k_arenaScenePath = "Assets/Scenes/P0NetArena.unity";
+
         [MenuItem("Tools/Make Assets/P0 Play Scene (Create All)")]
         public static void CreateAll() => CreateInternal(force: false);
+
+        /// <summary>
+        /// 멀티 피어(더미 테스트) 전용 빈 네트워크 아레나 씬 생성 + Build Settings 등록.
+        /// 멀티 피어 모드는 StartGameArgs.Scene이 없으면 씬 준비 상태가 완료되지 않아 스폰 큐가 영영 처리되지 않는다.
+        /// SceneRef는 빌드 인덱스 기반이라 Build Settings 등록이 필수 (EditorBuildSettings API 사용 — RULE-04 예외적 변경, 사용자 보고됨).
+        /// </summary>
+        [MenuItem("Tools/Make Assets/P0 Net Arena Scene")]
+        public static void CreateNetArena()
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(k_arenaScenePath) == null)
+            {
+                EditorSceneManager.SaveOpenScenes();
+                string reopenPath = SceneManager.GetActiveScene().path;
+
+                Scene arena = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                EditorSceneManager.SaveScene(arena, k_arenaScenePath);
+
+                if (!string.IsNullOrEmpty(reopenPath))
+                    EditorSceneManager.OpenScene(reopenPath, OpenSceneMode.Single);
+            }
+
+            // Build Settings 등록 (중복 방지)
+            var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+            if (!scenes.Exists(s => s.path == k_arenaScenePath))
+            {
+                scenes.Add(new EditorBuildSettingsScene(k_arenaScenePath, true));
+                EditorBuildSettings.scenes = scenes.ToArray();
+            }
+
+            Debug.Log($"[MakeAssets] P0NetArena 준비 완료 (Build Settings 등록 포함): {k_arenaScenePath}");
+        }
 
         [MenuItem("Tools/Make Assets/P0 Play Scene (Force Recreate)")]
         public static void ForceRecreate() => CreateInternal(force: true);

@@ -192,7 +192,10 @@ namespace Photon.Voice
                     }
                     break;
                 default:
-                    this.Logger.Log(LogLevel.Warning, "Leader joined room, Voice client is busy ({0}). Is this expected?", this.ClientState);
+                    // 프로젝트 수정: 접속 진행 중 상태(ConnectingToNameServer 등)는 상태 전이 시
+                    // OnVoiceStateChanged→FollowLeader가 재시도하므로 정상 — Warning에서 Info로 하향
+                    // (런타임 부착 구조상 OnPlayerJoined가 접속 중에 도착하는 게 기본 경로라 매번 경고가 떴음).
+                    this.Logger.Log(LogLevel.Info, "Leader joined room, Voice client is busy ({0}). Will retry on state change.", this.ClientState);
                     break;
             }
         }

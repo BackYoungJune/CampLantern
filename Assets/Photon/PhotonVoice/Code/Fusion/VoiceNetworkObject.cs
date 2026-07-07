@@ -118,6 +118,14 @@ namespace Photon.Voice.Fusion
 
             this.voiceConnection = this.Runner.GetComponent<VoiceConnection>();
 
+            // 프로젝트 수정: 음성 미지원 피어(에디터 더미 러너 등)에는 VoiceConnection이 없다 —
+            // 원본은 아래 AddSpeaker에서 NRE. 셋업을 통째로 생략한다 (tech-stack-decisions.md 수술 목록 참조).
+            if (this.voiceConnection == null)
+            {
+                this.Logger.Log(LogLevel.Info, "No VoiceConnection on runner '{0}' — skipping voice setup (voice-less peer).", this.Runner.name);
+                return;
+            }
+
             if (this.IsLocal)
             {
                 this.SetupRecorder();
