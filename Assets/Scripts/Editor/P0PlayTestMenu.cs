@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using CampLantern.Bootstrap;
+using CampLantern.Core.Persistence;
 using CampLantern.Hunting;
 using CampLantern.Networking;
 using Fusion;
@@ -303,6 +304,71 @@ namespace CampLantern.EditorTools
                                  placedCount == expectedMaxCount;
             Debug.LogWarning($"[P0PlayTest] 영지 수용량 경계: {(capacityPass ? "PASS" : "FAIL")} " +
                               $"(배치수:{placedCount}, 기대치:{expectedMaxCount}, 사용량:{estateManager.CapacityUsed}/{capacityMax}, 초과차단:{overCapacityBlocked})");
+        }
+
+        /// <summary>
+        /// QA — 저장된 배치가 축소된 수용량을 초과할 때 데이터 유실 없이 보유 목록으로 반환되는지 검증
+        /// (2026-07-08 수정: EstateHarness/P0Harness 배치 복원 루프의 Place() 반환값 무시 버그 회귀 테스트).
+        /// 씬 리로드로는 인스펙터 기본값(20)이 되살아나 재현이 안 되므로, 실행 중인 EstateManager의
+        /// CapacityMax를 리플렉션으로 임시 축소한 뒤 복원 루프와 동일한 로직을 직접 수행해 검증한다.
+        /// </summary>
+        [MenuItem("Tools/P0 Play Test/Run Capacity Restore QA")]
+        public static void RunCapacityRestoreQA()
+        {
+            var harness = Object.FindFirstObjectByType<P0Harness>();
+            var estateManager = Object.FindFirstObjectByType<CampLantern.Estate.EstateManager>();
+            var registry = Resources.Load<CampLantern.Core.ContentRegistry>("ContentRegistry");
+            if (harness == null || estateManager == null || registry == null)
+            {
+                Debug.LogError("[P0PlayTest] 하네스/EstateManager/레지스트리 없음");
+                return;
+            }
+            if (!registry.TryGetEstateObject("estate_lantern", out CampLantern.Core.EstateObjectDef lanternDef))
+            {
+                Debug.LogError("[P0PlayTest] estate_lantern Def 없음");
+                return;
+            }
+
+            var capacityField = typeof(CampLantern.Estate.EstateManager)
+                .GetField("m_capacityMax", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            int originalCapacity = estateManager.CapacityMax;
+
+            try
+            {
+                capacityField.SetValue(estateManager, 2); // 3개를 복원 시도하면 1개는 초과되도록 축소
+
+                int ownedBefore = harness.State.Shop.CountOwned(lanternDef);
+                var fakeSaved = new[]
+                {
+                    new PlacedObjectSave { DefId = "estate_lantern", Position = new Vector3(30f, 0f, 0f), Rotation = Quaternion.identity },
+                    new PlacedObjectSave { DefId = "estate_lantern", Position = new Vector3(31f, 0f, 0f), Rotation = Quaternion.identity },
+                    new PlacedObjectSave { DefId = "estate_lantern", Position = new Vector3(32f, 0f, 0f), Rotation = Quaternion.identity },
+                };
+
+                int placedCount = 0, returnedCount = 0;
+                foreach (PlacedObjectSave saved in fakeSaved)
+                {
+                    if (!registry.TryGetEstateObject(saved.DefId, out CampLantern.Core.EstateObjectDef def)) continue;
+                    if (estateManager.Place(def, saved.Position, saved.Rotation) == null)
+                    {
+                        harness.State.Shop.ReturnOwned(def);
+                        returnedCount++;
+                    }
+                    else
+                    {
+                        placedCount++;
+                    }
+                }
+
+                int ownedAfter = harness.State.Shop.CountOwned(lanternDef);
+                bool pass = placedCount == 2 && returnedCount == 1 && ownedAfter == ownedBefore + 1;
+                Debug.LogWarning($"[P0PlayTest] 수용량 초과 복원 QA: {(pass ? "PASS" : "FAIL")} " +
+                                  $"(배치:{placedCount} 반환:{returnedCount} 보유목록:{ownedBefore}->{ownedAfter})");
+            }
+            finally
+            {
+                capacityField.SetValue(estateManager, originalCapacity); // 원복
+            }
         }
 
         /// <summary>진단용 — 현재 인벤토리의 사슴 가죽/뿔 수량 즉시 보고.</summary>

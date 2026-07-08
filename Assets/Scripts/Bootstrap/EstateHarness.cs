@@ -64,10 +64,18 @@ namespace CampLantern.Bootstrap
             {
                 foreach (PlacedObjectSave saved in m_state.PendingPlacements)
                 {
-                    if (m_registry.TryGetEstateObject(saved.DefId, out EstateObjectDef def))
-                        m_estateManager.Place(def, saved.Position, saved.Rotation);
-                    else
+                    if (!m_registry.TryGetEstateObject(saved.DefId, out EstateObjectDef def))
+                    {
                         Debug.LogWarning($"[EstateHarness] 저장된 배치 오브젝트 Id를 찾을 수 없음: {saved.DefId}");
+                        continue;
+                    }
+
+                    if (m_estateManager.Place(def, saved.Position, saved.Rotation) == null)
+                    {
+                        // 수용량 초과 등으로 복원 실패 — 데이터 유실 방지를 위해 보유 목록으로 되돌린다
+                        m_state.Shop.ReturnOwned(def);
+                        Debug.LogWarning($"[EstateHarness] 저장된 배치 복원 실패(수용량 초과 등) — 보유 목록으로 반환: {saved.DefId}");
+                    }
                 }
             }
         }
