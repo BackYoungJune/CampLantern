@@ -4,7 +4,9 @@
 Photon Room 개념으로 로비/낚시터/사냥터/영지 4개 공간을 나누고, "저장 데이터"와 "실시간 Room"을 분리한다 — 영지 배치는 서버 DB에 상시 저장되고 Room은 플레이어가 있을 때만 생성된다.
 
 ## 핵심 타입 / 진입점
-- 아직 코드 없음. 넷코드는 [[tech-stack-decisions]] 참조 (Photon Fusion 2).
+- `Networking/SessionLauncher.cs` — `StartSession(sessionName, ct)`가 공간 무관 공통 진입점. 공간별 이름 규칙: 낚시터 `fishing_{shardId}`, 사냥터 `hunt_zone_{zoneId}`(=`StartHuntZone` 래퍼), 영지 `estate_{ownerId}`. 로비는 공유 Room이 아니므로 SessionLauncher를 쓰지 않는다.
+- `Bootstrap/LobbyHarness.cs` / `FishingGroundHarness.cs` / `HuntZoneHarness.cs` / `EstateHarness.cs` — 공간별 씬 진입점(개발용 IMGUI). 각 씬: `Lobby.unity`, `FishingGround.unity`, `HuntZone_A.unity`, `EstateTemplate.unity` (Editor 팩토리: `RoomScenesFactory.cs`, `Tools > Make Assets > Room Scenes`).
+- **P0 스켈레톤 한계 (2026-07-07)**: 매칭/샤딩(낚시터 "정원 도달 시 새 인스턴스"), 사냥터 존 자동 배정(위치 기반 라우팅), 영지 소유자 인증(현재 `SystemInfo.deviceUniqueIdentifier` 임시값)은 전부 백엔드 미정이라 미구현 — 고정 이름 Room 접속만 된다. 인벤토리/재화도 씬 로드마다 리셋(영구 저장 없음).
 
 ## 공간별 정의
 

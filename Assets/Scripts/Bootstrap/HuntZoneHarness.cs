@@ -1,0 +1,271 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CampLantern.Core;
+using CampLantern.Hunting;
+using CampLantern.Networking;
+using CampLantern.Networking.Voice;
+using Fusion;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+namespace CampLantern.Bootstrap
+{
+    /// <summary>
+    /// 사냥터 — 존 분할 구조 (room-architecture.md). 이 씬은 존 하나("A")를 대표한다 —
+    /// 실제로는 존마다 별도 Room·별도 씬 인스턴스가 필요하지만, 존 자동 배정(위치 기반 라우팅)은
+    /// 매칭 백엔드가 필요해 P0 범위 밖 — 고정 존 하나로 협동 사냥 루프만 검증한다.
+    /// 세션/더미 피어/음성 배선은 P0Harness와 동일 패턴 — 사냥 전용으로 축소.
+    /// </summary>
+    public class HuntZoneHarness : MonoBehaviour
+    {
+        [SerializeField] private SessionLauncher m_launcher;
+        [SerializeField] private NetworkObject m_huntTargetPrefab;
+        [SerializeField] private string m_lobbySceneName = "Lobby";
+        [SerializeField] private string m_zoneId = "a";
+        [SerializeField] private Vector3 m_huntSpawnPos = new Vector3(0f, 0f, 5f);
+        [SerializeField] private int m_hitDamage = 10;
+
+        private readonly Inventory m_inventory = new Inventory();
+        private readonly List<HuntTarget> m_huntTargetsBuffer = new List<HuntTarget>();
+
+        private VoiceController m_voice;
+        private PlayerMute m_mute;
+
+        private HuntTarget m_huntTarget;
+        private HuntLedger m_huntLedger;
+
+        private NetworkRunner m_dummyRunner;
+        private bool m_dummyJoining;
+
+        private bool m_joining;
+        private string m_lastLog = "-";
+
+        private void Awake()
+        {
+            m_voice = m_launcher.GetComponent<VoiceController>();
+            m_mute  = m_launcher.GetComponent<PlayerMute>();
+
+            m_launcher.SessionStarted -= OnSessionStarted;
+            m_launcher.SessionStarted += OnSessionStarted;
+        }
+
+        private void OnDestroy()
+        {
+            m_launcher.SessionStarted -= OnSessionStarted;
+            UnhookHuntTarget();
+
+            if (m_dummyRunner != null && m_dummyRunner.IsRunning)
+                m_dummyRunner.Shutdown();
+            m_dummyRunner = null;
+        }
+
+        private void Update()
+        {
+            if (m_huntTarget == null && m_launcher.Runner != null)
+            {
+                HuntTarget target = FindHuntTarget(m_launcher.Runner);
+                if (target != null) HookHuntTarget(target);
+            }
+        }
+
+        public HuntTarget FindHuntTarget(NetworkRunner runner)
+        {
+            if (runner == null) return null;
+            m_huntTargetsBuffer.Clear();
+            runner.GetAllBehaviours(m_huntTargetsBuffer);
+            return m_huntTargetsBuffer.Count > 0 ? m_huntTargetsBuffer[0] : null;
+        }
+
+        private void OnSessionStarted(NetworkRunner runner)
+        {
+            if (m_huntTargetPrefab != null && runner.IsSharedModeMasterClient)
+                runner.Spawn(m_huntTargetPrefab, m_huntSpawnPos, Quaternion.identity);
+        }
+
+        private void HookHuntTarget(HuntTarget target)
+        {
+            m_huntTarget = target;
+            m_huntLedger = target.GetComponent<HuntLedger>();
+            if (m_huntLedger != null)
+            {
+                m_huntLedger.RewardGranted -= OnRewardGranted;
+                m_huntLedger.RewardGranted += OnRewardGranted;
+            }
+        }
+
+        private void UnhookHuntTarget()
+        {
+            if (m_huntLedger != null) m_huntLedger.RewardGranted -= OnRewardGranted;
+            m_huntTarget = null;
+            m_huntLedger = null;
+        }
+
+        private void OnRewardGranted(HuntTargetDef def)
+        {
+            if (def.RewardMaterials == null) return;
+            foreach (ItemDef material in def.RewardMaterials) m_inventory.Add(material);
+            m_lastLog = $"사냥 보상 지급: {def.DisplayName}";
+        }
+
+        private async Task JoinAsync()
+        {
+            m_joining = true;
+            try
+            {
+                await m_launcher.StartHuntZone(m_zoneId, destroyCancellationToken);
+                m_lastLog = "사냥터 접속 완료";
+            }
+            catch (OperationCanceledException) { /* 파괴로 인한 취소 — 정상 */ }
+            catch (Exception e)
+            {
+                m_lastLog = $"접속 실패: {e.Message}";
+                Debug.LogException(e, this);
+            }
+            finally
+            {
+                m_joining = false;
+            }
+        }
+
+        private void AddDummyPeer()
+        {
+            if (m_dummyRunner != null || m_dummyJoining) return;
+            _ = StartDummyAsync();
+        }
+
+        private void RemoveDummyPeer()
+        {
+            var runner = m_dummyRunner;
+            m_dummyRunner = null;
+            if (runner != null) _ = runner.Shutdown();
+        }
+
+        private async Task StartDummyAsync()
+        {
+            m_dummyJoining = true;
+            try
+            {
+                var go = new GameObject("DummyPeer");
+                var runner = go.AddComponent<NetworkRunner>();
+                var sceneManager = go.AddComponent<NetworkSceneManagerDefault>();
+
+                var args = new StartGameArgs
+                {
+                    GameMode                   = GameMode.Shared,
+                    SessionName                = $"hunt_zone_{m_zoneId}",
+                    SceneManager               = sceneManager,
+                    StartGameCancellationToken = destroyCancellationToken,
+                };
+                NetworkSceneInfo? arenaScene = SessionLauncher.TryGetMultiPeerArenaScene();
+                if (arenaScene.HasValue) args.Scene = arenaScene.Value;
+
+                var result = await runner.StartGame(args);
+                if (!result.Ok)
+                {
+                    Destroy(go);
+                    m_lastLog = $"더미 접속 실패: {result.ShutdownReason}";
+                    return;
+                }
+
+                m_dummyRunner = runner;
+                m_lastLog = $"더미 접속 완료 (P{runner.LocalPlayer.PlayerId})";
+            }
+            catch (OperationCanceledException) { /* 파괴로 인한 취소 — 정상 */ }
+            catch (Exception e)
+            {
+                m_lastLog = $"더미 접속 실패: {e.Message}";
+                Debug.LogException(e, this);
+            }
+            finally
+            {
+                m_dummyJoining = false;
+            }
+        }
+
+        private void OnGUI()
+        {
+            GUILayout.Label($"[사냥터_존{m_zoneId.ToUpperInvariant()}] {m_lastLog}");
+            if (GUILayout.Button("로비로 복귀")) SceneManager.LoadScene(m_lobbySceneName);
+            GUILayout.Space(8);
+
+            NetworkRunner runner = m_launcher.Runner;
+            if (runner == null)
+            {
+                GUI.enabled = !m_joining;
+                if (GUILayout.Button(m_joining ? "접속 중..." : "사냥터 접속"))
+                    _ = JoinAsync();
+                GUI.enabled = true;
+                return;
+            }
+
+            GUILayout.Label($"접속: {runner.SessionInfo.Name} ({runner.SessionInfo.PlayerCount}명)");
+
+            if (m_voice != null && GUILayout.Button($"마이크 {(m_voice.MicEnabled ? "끄기" : "켜기")}"))
+                m_voice.SetMicEnabled(!m_voice.MicEnabled);
+            if (m_mute != null)
+            {
+                foreach (PlayerRef player in runner.ActivePlayers)
+                {
+                    if (player == runner.LocalPlayer) continue;
+                    bool muted = m_mute.IsMuted(player);
+                    if (GUILayout.Button($"P{player.PlayerId} 음소거 {(muted ? "해제" : "")}"))
+                        m_mute.SetMuted(player, !muted);
+                }
+            }
+
+            GUILayout.Space(8);
+            if (m_dummyRunner == null)
+            {
+                GUI.enabled = !m_dummyJoining;
+                if (GUILayout.Button(m_dummyJoining ? "더미 접속 중..." : "더미 플레이어 추가 (2인 테스트)"))
+                    AddDummyPeer();
+                GUI.enabled = true;
+            }
+            else
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.Label($"더미: P{m_dummyRunner.LocalPlayer.PlayerId}", GUILayout.Width(80));
+                HuntTarget dummyTarget = FindHuntTarget(m_dummyRunner);
+                if (dummyTarget != null)
+                {
+                    if (GUILayout.Button("더미 타격"))
+                        dummyTarget.ApplyHit(m_dummyRunner.LocalPlayer, m_hitDamage);
+                    var dummyLedger = dummyTarget.GetComponent<HuntLedger>();
+                    if (dummyLedger != null && GUILayout.Button("더미 유인"))
+                        dummyLedger.RecordContribution(m_dummyRunner.LocalPlayer, HuntLedger.ContributionKind.Lure);
+                }
+                if (GUILayout.Button("더미 제거")) RemoveDummyPeer();
+                GUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8);
+            if (m_huntTarget == null)
+            {
+                GUILayout.Label("사냥감 스폰 대기 중...");
+                return;
+            }
+
+            GUILayout.Label($"사냥감 HP: {m_huntTarget.CurrentHealth}  진행중: {m_huntTarget.HuntActive}");
+            GUILayout.BeginHorizontal();
+            if (m_huntTarget.Object.HasStateAuthority)
+            {
+                if (GUILayout.Button("사냥 시작"))
+                    m_lastLog = m_huntTarget.TryStartHunt() ? "사냥 시작!" : "시작 불가 (2인 미만)";
+            }
+            else
+            {
+                GUILayout.Label("(시작은 마스터만)", GUILayout.Width(110));
+            }
+            if (GUILayout.Button("타격")) m_huntTarget.ApplyHit(runner.LocalPlayer, m_hitDamage);
+            if (m_huntLedger != null && GUILayout.Button("유인(기여)"))
+                m_huntLedger.RecordContribution(runner.LocalPlayer, HuntLedger.ContributionKind.Lure);
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+            GUILayout.Label("── 인벤토리 ──");
+            foreach (KeyValuePair<ItemDef, int> entry in new List<KeyValuePair<ItemDef, int>>(m_inventory.Items))
+                GUILayout.Label($"{entry.Key.DisplayName} x{entry.Value}");
+        }
+    }
+}

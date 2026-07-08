@@ -11,6 +11,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/P0NetArena.unity
     guid: 7b9291420f3af164e8e91c9ebce14249
+  - enabled: 1
+    path: Assets/Scenes/Lobby.unity
+    guid: a70d4ede773c28341b5083bae2f4d3f9
+  - enabled: 1
+    path: Assets/Scenes/FishingGround.unity
+    guid: 4bc3fd7aa6b3d124ea025385b5cfa4bd
+  - enabled: 1
+    path: Assets/Scenes/HuntZone_A.unity
+    guid: 442e0e7f5a0687b4eb737b06a7e534c0
+  - enabled: 1
+    path: Assets/Scenes/EstateTemplate.unity
+    guid: 8db63d6e66a8a424980bea7ee6a6a554
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
