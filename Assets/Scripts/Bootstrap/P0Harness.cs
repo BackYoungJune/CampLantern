@@ -66,6 +66,9 @@ namespace CampLantern.Bootstrap
         /// <summary>접속 중인 더미 피어 러너. 없으면 null. (자동 테스트 메뉴에서 사용)</summary>
         public NetworkRunner DummyRunner => m_dummyRunner;
 
+        /// <summary>테스트/디버그 조회용 — 저장·인벤토리 라운드트립 자동 검증에 사용.</summary>
+        public PlayerState State => m_state;
+
         private bool m_joining;
         private string m_lastLog = "-";
         private Vector2 m_scroll;

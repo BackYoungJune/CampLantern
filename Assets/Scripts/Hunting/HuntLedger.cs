@@ -63,6 +63,17 @@ namespace CampLantern.Hunting
             return Contributions.TryGet(player, out var count) && count > 0;
         }
 
+        /// <summary>
+        /// 새 사냥 사이클 시작 시 이전 기여 기록을 지운다 — 같은 사냥감을 반복 사냥할 때
+        /// 이전 라운드 참여자가 이번 라운드에 기여 없이도 보상받는 것을 방지한다.
+        /// HuntTarget.TryStartHunt에서만 호출(State Authority 컨텍스트).
+        /// </summary>
+        public void ResetForNewHunt()
+        {
+            if (!Object.HasStateAuthority) return;
+            Contributions.Clear();
+        }
+
         [Rpc(RpcSources.All, RpcTargets.StateAuthority)]
         private void RPC_RecordContribution(PlayerRef player, int kind)
         {

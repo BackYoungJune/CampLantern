@@ -51,8 +51,11 @@ namespace CampLantern.Hunting
                 return false;
             }
 
-            CurrentHealth = Def.MaxHealth;
-            HuntActive    = true;
+            CurrentHealth   = Def.MaxHealth;
+            HuntActive      = true;
+            m_defeatedFired = false; // 재사냥 시작 — 이전 처치의 1회성 가드를 새 사이클로 초기화
+            m_ledger?.ResetForNewHunt(); // 참여 판정도 이번 사이클 기여만 반영하도록 초기화
+
             return true;
         }
 

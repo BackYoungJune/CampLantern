@@ -164,6 +164,81 @@ namespace CampLantern.EditorTools
             }
         }
 
+        /// <summary>
+        /// 같은 사냥감을 재사냥해도 보상이 다시 지급되는지 확인 — RunCoopHuntTest로 1차 처치 완료 후 실행.
+        /// m_defeatedFired/Contributions가 새 사이클에서 리셋되는지 검증 (2026-07-08 버그 수정 회귀 테스트).
+        /// </summary>
+        [MenuItem("Tools/P0 Play Test/Run Second Hunt Round Test")]
+        public static async void RunSecondHuntRoundTest()
+        {
+            var launcher = Object.FindFirstObjectByType<SessionLauncher>();
+            var harness  = Object.FindFirstObjectByType<P0Harness>();
+            if (launcher == null || launcher.Runner == null || harness == null || harness.DummyRunner == null)
+            {
+                Debug.LogError("[P0PlayTest] 세션/더미 없음 — Run Coop Hunt Test 먼저 실행해 1차 처치 완료 상태여야 함");
+                return;
+            }
+
+            NetworkRunner mainRunner = launcher.Runner;
+            NetworkRunner dummyRunner = harness.DummyRunner;
+            HuntTarget mainTarget = harness.FindHuntTarget(mainRunner);
+            HuntTarget dummyTarget = harness.FindHuntTarget(dummyRunner);
+            if (mainTarget == null || dummyTarget == null || mainTarget.CurrentHealth > 0)
+            {
+                Debug.LogError("[P0PlayTest] 사냥감이 처치 상태(HP<=0)가 아님 — 1차 처치를 먼저 완료해야 함");
+                return;
+            }
+
+            var registry = Resources.Load<CampLantern.Core.ContentRegistry>("ContentRegistry");
+            registry.TryGetItem("item_deer_hide", out CampLantern.Core.ItemDef hideDef);
+            int hideBefore = harness.State.Inventory.CountOf(hideDef);
+
+            var mainLedger  = mainTarget.GetComponent<HuntLedger>();
+            var dummyLedger = dummyTarget.GetComponent<HuntLedger>();
+            bool rewardFired = false;
+            System.Action<CampLantern.Core.HuntTargetDef> onReward = _ => rewardFired = true;
+            mainLedger.RewardGranted += onReward;
+            try
+            {
+                bool started = mainTarget.TryStartHunt();
+                dummyLedger.RecordContribution(dummyRunner.LocalPlayer, HuntLedger.ContributionKind.Lure);
+                await Task.Delay(500);
+
+                for (int guard = 0; guard < 100 && mainTarget.CurrentHealth > 0; guard++)
+                {
+                    mainTarget.ApplyHit(mainRunner.LocalPlayer, 10);
+                    await Task.Delay(50);
+                }
+                await Task.Delay(1000);
+
+                int hideAfter = harness.State.Inventory.CountOf(hideDef);
+                bool pass = started && rewardFired && hideAfter == hideBefore + 1;
+                string detail = $"재사냥시작:{started} 보상재발화:{rewardFired} 가죽:{hideBefore}->{hideAfter}";
+                if (pass)
+                    Debug.LogWarning($"[P0PlayTest] 2차 사냥 회귀 테스트 PASS — {detail}");
+                else
+                    Debug.LogError($"[P0PlayTest] 2차 사냥 회귀 테스트 FAIL — {detail}");
+            }
+            finally
+            {
+                mainLedger.RewardGranted -= onReward;
+            }
+        }
+
+        /// <summary>진단용 — 현재 인벤토리의 사슴 가죽/뿔 수량 즉시 보고.</summary>
+        [MenuItem("Tools/P0 Play Test/Report Hide Count")]
+        public static void ReportHideCount()
+        {
+            var harness = Object.FindFirstObjectByType<P0Harness>();
+            var registry = Resources.Load<CampLantern.Core.ContentRegistry>("ContentRegistry");
+            if (harness == null || registry == null) { Debug.LogError("[P0PlayTest] 하네스/레지스트리 없음"); return; }
+
+            registry.TryGetItem("item_deer_hide", out CampLantern.Core.ItemDef hideDef);
+            registry.TryGetItem("item_deer_antler", out CampLantern.Core.ItemDef antlerDef);
+            Debug.LogWarning($"[P0PlayTest] 현재 인벤토리 — 가죽:{harness.State.Inventory.CountOf(hideDef)} " +
+                              $"뿔:{harness.State.Inventory.CountOf(antlerDef)}");
+        }
+
         /// <summary>더미 피어 제거 트리거 — VoiceNetworkObject Despawned 경로 재현용.</summary>
         [MenuItem("Tools/P0 Play Test/Remove Dummy Peer")]
         public static void RemoveDummyPeer()
