@@ -54,6 +54,23 @@ Voice 2.63(Asset Store)은 Realtime **4** 기반인데 Fusion 2.1은 Realtime **
 - 더미 러너에는 음성을 붙이지 않는다 (마이크 이중 캡처·에코 방지) — VoiceNetworkObject 가드가 이를 전제.
 - 부수 함정: PeerMode 변경 등으로 config가 재임포트될 때 프리팹 테이블 참조가 깨질 수 있음 — 증상이 "스폰 무음 실패"면 `Tools > Fusion > Rebuild Prefab Table` 먼저. Play 중에는 재컴파일이 보류되므로 브릿지 자동화 시 Play 종료 후 Refresh.
 
+## Meta Avatars 통합 (2026-07-08 — VR 리그 + 네트워크 아바타)
+
+### 샘플 임포트가 선행 조건 (Package Manager GUI 작업)
+네트워크 아바타는 Meta가 통째로 제공(`FusionAvatarSdk28Plus.prefab` = NetworkObject+NetworkTransform+`AvatarBehaviourFusion`+`AvatarEntity`, core 패키지에 이미 컴파일됨)하지만, 씬 런타임에 **`OvrAvatarManager` 프리팹 + 입력 매니저가 필요한데 이 둘은 패키지의 `Samples~`에만 있다.** Package Manager > Meta Avatars SDK > Samples > **"Sample Scenes" Import** 필수 (스크립트로 대체 불가). 임포트 시 `Assets/Samples/.../`에 `AvatarSdkManagerStyle2Meta.prefab`(Recommended), `SampleInputManager`(로컬 바디 트래킹), `SampleAvatarEntity`가 들어온다.
+
+### 샘플 임포트 = Platform SDK 203 비호환 2건 패치 필요 (재임포트하면 되돌아감)
+"Sample Scenes"는 구 Platform SDK 기준이라 이 프로젝트의 Platform SDK 203.0.0과 컴파일이 깨진다. 자체 asmdef(`Oculus.AvatarSDK2.Samples`)라 게임 코드를 직접 막진 않지만 에러가 있으면 Play가 막힌다. 패치:
+- `AvatarEditorUtils.cs` `LaunchAvatarEditor()` — `Oculus.Platform.CAPI`가 internal화돼 `ovr_Avatar_LaunchAvatarEditor` 직접 호출 불가. 에디터/스탠드얼론 브랜치를 no-op(경고)으로 스텁 (아바타 에디터는 Quest 기기 전용 데모, 파이프라인 불필요).
+- `SampleSceneLocomotion.cs` — `yRotate`가 `#if USING_XR_SDK` 블록 안에만 선언돼 `#if UNITY_EDITOR` 브랜치에서 미정의. 메서드 스코프로 올림.
+- **Voice와 동일 caveat**: 샘플을 재임포트/업데이트하면 이 패치가 전부 되돌아간다 — 이 절차를 다시 적용.
+
+### Meta의 AvatarSpawnerFusion을 쓰지 않는다 — 커스텀 AvatarController
+`AvatarSpawnerFusion`은 `FusionBBEvents.OnSceneLoadDone`(Meta Building Blocks 표준 부트스트랩 이벤트)로 러너를 얻는데, 이 프로젝트는 커스텀 `SessionLauncher`가 런타임에 러너를 AddComponent하므로 그 이벤트가 발화하지 않아 아바타가 영영 스폰되지 않는다(위 Voice의 "런타임 AddComponent된 러너는 자동 콜백 수집에서 빠진다"와 같은 뿌리). 그래서 `CampLantern.Networking.Avatar.AvatarController`가 `VoiceController`와 동일하게 `SessionLauncher.SessionStarted`에 직접 얹어 `runner.Spawn(FusionAvatarSdk28Plus, ..., runner.LocalPlayer, onBeforeSpawned: LocalAvatarIndex 설정)` 한다. `[[room-architecture]]`의 SessionLauncher 흐름을 그대로 따른다.
+- **P0 범위**: `OculusId=0`으로 스폰 → Meta 계정 entitlement 없이 프리셋(테스트) 아바타. 실제 유저 아바타는 `OvrAvatarEntitlement.SetAccessToken`(Platform SDK entitlement)가 필요 — 후속. 에디터에서 `Licensing 404 entitlement` 로그는 정상(프리셋 폴백).
+- **씬 선행조건**: `OVRCameraRig`(VRPlayerRig, `AvatarBehaviourFusion`이 `OVRManager.instance`로 찾음) + `OvrAvatarManager`(Style2Meta) + `SampleInputManager`가 씬에 있어야 함. `P0Playground`에 `AvatarSystem` 하위로 배선됨.
+- 스폰 프리팹은 Fusion 프리팹 테이블에 있어야 함 — 임포트로 자동 베이킹되나 무음 실패 시 `Tools > Fusion > Rebuild Prefab Table`.
+
 ## 숨은 규칙 / 암묵지
 - Meta Avatars SDK를 Asset Store에서 검색해도 안 뜨는 게 정상이다 (EOF라 검색 노출이 약함). `developers.meta.com/horizon/downloads/package/meta-avatars-sdk/`에서 직접 받아야 한다.
 - Fusion App ID와 Voice App ID는 **같은 `PhotonAppSettings` 에셋의 다른 필드**(App Id Fusion / App Id Voice)에 들어간다 — 별도 설정 파일이 아니다.

@@ -110,6 +110,8 @@ Prefab.Close
 
 - **Editor 락**: 같은 프로젝트로 Editor가 열려 있는 상태에서 `/run bridge` 호출 시 Unity가 "project already open"으로 실패. `unity_bridge_status()` 의 `editor_running` 을 반드시 먼저 확인.
 - **Domain Reload**: 이 프로젝트는 Domain Reload 비활성화. ClaudeBridge도 `[InitializeOnLoad]` 생성자에서 static 상태 초기화를 수동으로 하므로 안전하지만, 새 op 추가 시 static 필드가 들어가면 RULES.md RULE-01 따라 `[RuntimeInitializeOnLoadMethod]` 초기화 붙이기.
+- **재컴파일이 in-flight 응답을 먹는다**: `Asset.Refresh`(또는 `.cs` 변경 후 Refresh)가 스크립트 재컴파일→어셈블리 리로드를 유발하면, 그 커맨드의 outbox 응답이 리로드에 삼켜져 `NO_RESPONSE`로 보인다(브릿지는 리로드 후 재등록됨). **원격 재컴파일 성공 여부는 outbox 응답이 아니라 읽기전용 op를 새로 드롭해 확인** — `Reflection.Invoke get_scriptCompilationFailed`(== `"False"`면 성공), 그리고 `Editor.log`에서 마지막 `FinalizeReload` 이후 `error CS` 없음을 교차 확인.
+- **대용량 임포트 중 폴링 정지**: 브릿지는 `EditorApplication.update`에서 200ms 폴링하는데, 대용량 에셋 임포트(예: Meta Avatars 샘플)나 Editor 비포커스 시 update 루프가 멈춰 커맨드가 처리되지 않는다(무응답). 드롭한 커맨드는 큐에 남으니 재드롭 없이 outbox를 계속 폴링하면 idle 복귀 즉시 처리된다. `Get-Process Unity`의 CPU 델타가 0에 수렴하면 임포트 완료 신호.
 - **파일 락 경합**: GUI 서버가 200ms 폴링하는 동안 배치 모드 진입은 불가. 모드 전환은 명시적으로(`Stop` → 배치 → 끝나면 `Start`).
 - **JsonUtility 한계**: Dictionary / polymorphic 타입 직렬화 약함. 새 op은 구조체(POCO)로 args/result 정의 필수.
 

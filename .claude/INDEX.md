@@ -60,7 +60,7 @@ GDD: [domain/gdd/VR_코지_소셜_영지_게임_기획서.docx](domain/gdd/VR_�
 
 ### [domain/tech-stack-decisions.md](domain/tech-stack-decisions.md)
 GDD엔 없는 세션 결정 사항 — Photon Fusion 2 vs PUN 2, Meta Avatars SDK(EOF v40.0.1), 영구 저장 백엔드 미정.
-- **keywords:** Photon, Fusion, PUN, Voice, App Id, 넷코드, netcode, Meta Avatars, EOF, 백엔드, backend, 서버 DB, 패키지 버전, manifest.json, 음소거, mute, VoiceNetworkObject, Recorder, Speaker, 음성 아바타, AssembliesToWeave, 위빙, weave, NetworkProjectConfig, Unsupported Plugin, CleanBuildCache
+- **keywords:** Photon, Fusion, PUN, Voice, App Id, 넷코드, netcode, Meta Avatars, EOF, 백엔드, backend, 서버 DB, 패키지 버전, manifest.json, 음소거, mute, VoiceNetworkObject, Recorder, Speaker, 음성 아바타, AssembliesToWeave, 위빙, weave, NetworkProjectConfig, Unsupported Plugin, CleanBuildCache, 아바타, avatar, AvatarController, AvatarSpawnerFusion, FusionAvatarSdk28Plus, AvatarBehaviourFusion, FusionBBEvents, OvrAvatarManager, SampleInputManager, AvatarSdkManagerStyle2Meta, VRPlayerRig, OVRCameraRig, OVRManager, VR 리그, entitlement, Sample Scenes 임포트, AvatarEditorUtils, yRotate, Rebuild Prefab Table
 - **when to read:** 네트워킹/멀티플레이 코드, 아바타 시스템, 저장소 관련 작업 착수 전
 
 ### [domain/room-architecture.md](domain/room-architecture.md)
