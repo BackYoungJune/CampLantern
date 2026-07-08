@@ -192,8 +192,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bdf264b11ac6a35479b4ddd29c43e0eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Bootstrap.FishingGroundHarness
-  m_rod: {fileID: 881412881}
-  m_spot: {fileID: 955099254}
+  m_rod: {fileID: 1061595446}
+  m_spot: {fileID: 1273925150}
   m_launcher: {fileID: 480180823}
   m_lobbySceneName: Lobby
   m_shardId: shard0
@@ -369,52 +369,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &881412880
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 881412882}
-  - component: {fileID: 881412881}
-  m_Layer: 0
-  m_Name: FishingRod
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &881412881
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 881412880}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5a359ae5d762254e98d604f430de329, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Fishing.FishingRod
-  m_castSeconds: 0.8
-  m_resultResetSeconds: 1
---- !u!4 &881412882
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 881412880}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -1}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &894176079
 GameObject:
   m_ObjectHideFlags: 0
@@ -542,54 +496,79 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &955099253
-GameObject:
+--- !u!1001 &1061595444
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1634609739}
+    m_Modifications:
+    - target: {fileID: 3336181890663761818, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_Name
+      value: FishingRod
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+--- !u!4 &1061595445 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5416113289425926913, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+  m_PrefabInstance: {fileID: 1061595444}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 955099255}
-  - component: {fileID: 955099254}
-  m_Layer: 0
-  m_Name: FishingSpot
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &955099254
+--- !u!114 &1061595446 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 756321399202500236, guid: 2e8d0ad066ac7ec44ba62b342801dfc5, type: 3}
+  m_PrefabInstance: {fileID: 1061595444}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 955099253}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 30c53e745d583794e93e7079414b62e1, type: 3}
+  m_Script: {fileID: 11500000, guid: f5a359ae5d762254e98d604f430de329, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Fishing.FishingSpot
-  m_fishTable:
-  - {fileID: 11400000, guid: 9f2e4ab6551233a42bf10bc2ddee0ab3, type: 2}
-  - {fileID: 11400000, guid: 6da91579feafcc54ea650d8071182a0b, type: 2}
-  - {fileID: 11400000, guid: 2165a4d9ed3d25143aedb5a4da235a3f, type: 2}
---- !u!4 &955099255
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 955099253}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.02, z: 2}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Fishing.FishingRod
 --- !u!1 &1264785656
 GameObject:
   m_ObjectHideFlags: 0
@@ -703,6 +682,79 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1273925148
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1634609739}
+    m_Modifications:
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7999817978512044471, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+      propertyPath: m_Name
+      value: FishingSpot
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+--- !u!4 &1273925149 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7214654712685624000, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+  m_PrefabInstance: {fileID: 1273925148}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1273925150 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4178048108312643039, guid: 6e2201e3fc1e2594c87ceddc49ee5df4, type: 3}
+  m_PrefabInstance: {fileID: 1273925148}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30c53e745d583794e93e7079414b62e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Fishing.FishingSpot
 --- !u!1 &1614263187
 GameObject:
   m_ObjectHideFlags: 0
@@ -840,6 +892,39 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!1 &1634609738
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1634609739}
+  m_Layer: 0
+  m_Name: Stations
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1634609739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1634609738}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1061595445}
+  - {fileID: 1273925149}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -848,8 +933,7 @@ SceneRoots:
   - {fileID: 894176082}
   - {fileID: 1264785660}
   - {fileID: 541334256}
-  - {fileID: 955099255}
-  - {fileID: 881412882}
   - {fileID: 480180824}
   - {fileID: 277943314}
   - {fileID: 36731987}
+  - {fileID: 1634609739}
