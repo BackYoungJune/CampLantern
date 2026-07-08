@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CampLantern.Core;
+using CampLantern.Core.Persistence;
 using CampLantern.Hunting;
 using CampLantern.Networking;
 using CampLantern.Networking.Voice;
@@ -16,6 +17,7 @@ namespace CampLantern.Bootstrap
     /// 실제로는 존마다 별도 Room·별도 씬 인스턴스가 필요하지만, 존 자동 배정(위치 기반 라우팅)은
     /// 매칭 백엔드가 필요해 P0 범위 밖 — 고정 존 하나로 협동 사냥 루프만 검증한다.
     /// 세션/더미 피어/음성 배선은 P0Harness와 동일 패턴 — 사냥 전용으로 축소.
+    /// 인벤토리는 PlayerState를 통해 로컬 JSON에 저장/복원된다.
     /// </summary>
     public class HuntZoneHarness : MonoBehaviour
     {
@@ -26,7 +28,8 @@ namespace CampLantern.Bootstrap
         [SerializeField] private Vector3 m_huntSpawnPos = new Vector3(0f, 0f, 5f);
         [SerializeField] private int m_hitDamage = 10;
 
-        private readonly Inventory m_inventory = new Inventory();
+        private PlayerState m_state;
+        private ContentRegistry m_registry;
         private readonly List<HuntTarget> m_huntTargetsBuffer = new List<HuntTarget>();
 
         private VoiceController m_voice;
@@ -43,6 +46,13 @@ namespace CampLantern.Bootstrap
 
         private void Awake()
         {
+            m_registry = Resources.Load<ContentRegistry>("ContentRegistry");
+            if (m_registry == null)
+                Debug.LogError("[HuntZoneHarness] ContentRegistry 없음 — Tools > Make Assets > Content Registry 실행 필요");
+
+            m_state = new PlayerState();
+            if (m_registry != null) m_state.Load(m_registry);
+
             m_voice = m_launcher.GetComponent<VoiceController>();
             m_mute  = m_launcher.GetComponent<PlayerMute>();
 
@@ -58,6 +68,17 @@ namespace CampLantern.Bootstrap
             if (m_dummyRunner != null && m_dummyRunner.IsRunning)
                 m_dummyRunner.Shutdown();
             m_dummyRunner = null;
+        }
+
+        private void OnApplicationQuit()
+        {
+            m_state.Save(); // 사냥터는 EstateManager가 없으므로 배치 목록은 디스크 값 그대로 보존됨
+        }
+
+        private void ReturnToLobby()
+        {
+            m_state.Save();
+            SceneManager.LoadScene(m_lobbySceneName);
         }
 
         private void Update()
@@ -104,7 +125,7 @@ namespace CampLantern.Bootstrap
         private void OnRewardGranted(HuntTargetDef def)
         {
             if (def.RewardMaterials == null) return;
-            foreach (ItemDef material in def.RewardMaterials) m_inventory.Add(material);
+            foreach (ItemDef material in def.RewardMaterials) m_state.Inventory.Add(material);
             m_lastLog = $"사냥 보상 지급: {def.DisplayName}";
         }
 
@@ -186,7 +207,7 @@ namespace CampLantern.Bootstrap
         private void OnGUI()
         {
             GUILayout.Label($"[사냥터_존{m_zoneId.ToUpperInvariant()}] {m_lastLog}");
-            if (GUILayout.Button("로비로 복귀")) SceneManager.LoadScene(m_lobbySceneName);
+            if (GUILayout.Button("로비로 복귀")) ReturnToLobby();
             GUILayout.Space(8);
 
             NetworkRunner runner = m_launcher.Runner;
@@ -264,7 +285,7 @@ namespace CampLantern.Bootstrap
 
             GUILayout.Space(8);
             GUILayout.Label("── 인벤토리 ──");
-            foreach (KeyValuePair<ItemDef, int> entry in new List<KeyValuePair<ItemDef, int>>(m_inventory.Items))
+            foreach (KeyValuePair<ItemDef, int> entry in new List<KeyValuePair<ItemDef, int>>(m_state.Inventory.Items))
                 GUILayout.Label($"{entry.Key.DisplayName} x{entry.Value}");
         }
     }

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 07d1ca22163da2441bc9f83fd862ffd6, type: 3}
+  m_Name: ContentRegistry
+  m_EditorClassIdentifier: Assembly-CSharp::CampLantern.Core.ContentRegistry
+  m_items:
+  - {fileID: 11400000, guid: 9f2e4ab6551233a42bf10bc2ddee0ab3, type: 2}
+  - {fileID: 11400000, guid: 2165a4d9ed3d25143aedb5a4da235a3f, type: 2}
+  - {fileID: 11400000, guid: 6da91579feafcc54ea650d8071182a0b, type: 2}
+  - {fileID: 11400000, guid: a8f370b0dd6c2e44f9790f80ff8e183e, type: 2}
+  - {fileID: 11400000, guid: bd37ce6d1e9ba9f4381bc99b834ebda1, type: 2}
+  - {fileID: 11400000, guid: c89ed8f416fae994c9c78e9a74ca4d44, type: 2}
+  - {fileID: 11400000, guid: 2ff7f39f5ea0983458fba58a469367f4, type: 2}
+  - {fileID: 11400000, guid: bc49ce5f33b80a745b80948b67244403, type: 2}
+  - {fileID: 11400000, guid: a68d302b46e76b9479f8666811b636d6, type: 2}
+  m_estateObjects:
+  - {fileID: 11400000, guid: 032e9e60b8b3f7148a2a601971e7f45a, type: 2}
+  - {fileID: 11400000, guid: d5e64a12b7d227e499f834d3bd50bfde, type: 2}
+  - {fileID: 11400000, guid: 464553d9628884147b3f9f174cc999dd, type: 2}
+  - {fileID: 11400000, guid: 47ecd2cfb2129a34f9f2cf3984aa5da7, type: 2}
+  - {fileID: 11400000, guid: 8ac234423c4a5774e99fd231c6ef0e62, type: 2}
+  - {fileID: 11400000, guid: 8e8b7beaf56953b49b766350d6f30bc2, type: 2}

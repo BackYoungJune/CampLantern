@@ -6,7 +6,8 @@ Photon Room 개념으로 로비/낚시터/사냥터/영지 4개 공간을 나누
 ## 핵심 타입 / 진입점
 - `Networking/SessionLauncher.cs` — `StartSession(sessionName, ct)`가 공간 무관 공통 진입점. 공간별 이름 규칙: 낚시터 `fishing_{shardId}`, 사냥터 `hunt_zone_{zoneId}`(=`StartHuntZone` 래퍼), 영지 `estate_{ownerId}`. 로비는 공유 Room이 아니므로 SessionLauncher를 쓰지 않는다.
 - `Bootstrap/LobbyHarness.cs` / `FishingGroundHarness.cs` / `HuntZoneHarness.cs` / `EstateHarness.cs` — 공간별 씬 진입점(개발용 IMGUI). 각 씬: `Lobby.unity`, `FishingGround.unity`, `HuntZone_A.unity`, `EstateTemplate.unity` (Editor 팩토리: `RoomScenesFactory.cs`, `Tools > Make Assets > Room Scenes`).
-- **P0 스켈레톤 한계 (2026-07-07)**: 매칭/샤딩(낚시터 "정원 도달 시 새 인스턴스"), 사냥터 존 자동 배정(위치 기반 라우팅), 영지 소유자 인증(현재 `SystemInfo.deviceUniqueIdentifier` 임시값)은 전부 백엔드 미정이라 미구현 — 고정 이름 Room 접속만 된다. 인벤토리/재화도 씬 로드마다 리셋(영구 저장 없음).
+- **P0 스켈레톤 한계 (2026-07-07)**: 매칭/샤딩(낚시터 "정원 도달 시 새 인스턴스"), 사냥터 존 자동 배정(위치 기반 라우팅), 영지 소유자 인증(현재 `SystemInfo.deviceUniqueIdentifier` 임시값)은 전부 백엔드 미정이라 미구현 — 고정 이름 Room 접속만 된다.
+- **로컬 JSON 저장 도입 (2026-07-08)**: `Core/Persistence/PlayerState.cs`+`SaveService.cs`로 코인/인벤토리/영지 배치가 로컬 JSON(`Application.persistentDataPath/player_save.json`)에 저장돼 로비↔낚시터↔사냥터↔영지 이동에도 이어진다. `Core/ContentRegistry.cs`(Resources 소재, `ContentRegistryFactory`로 생성)가 저장된 Id 문자열을 실제 Def 에셋으로 복원. **이건 "내 기기 안에서 상태 유지"만 해결** — 다른 유저가 오프라인 주인 영지를 읽는 진짜 오프라인 방문은 여전히 서버 필요 (tech-stack-decisions.md 참조).
 
 ## 공간별 정의
 
