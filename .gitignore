@@ -86,6 +86,9 @@ InitTestScene*.unity*
 # Addressables default ignores, before user customizations
 /ServerData
 /[Aa]ssets/StreamingAssets/aa*
+
+# ClaudeBridge runtime inbox/outbox (에이전트-Unity 통신 커맨드/응답 산출물, 트랜지언트)
+/.claude-bridge/
 /[Aa]ssets/AddressableAssetsData/link.xml*
 /[Aa]ssets/Addressables_Temp*
 # By default, Addressables content builds will generate addressables_content_state.bin
