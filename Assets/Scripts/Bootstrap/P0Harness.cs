@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CampLantern.Cooking;
 using CampLantern.Core;
+using CampLantern.Core.Persistence;
 using CampLantern.Estate;
 using CampLantern.Fishing;
 using CampLantern.Hunting;
@@ -14,8 +15,9 @@ namespace CampLantern.Bootstrap
 {
     /// <summary>
     /// P0 플레이 하네스 — 씬 부트스트랩 + 데스크톱 디버그 UI (IMGUI).
-    /// Wallet/Inventory/EstateShop(순수 클래스)을 소유하고 각 시스템을 배선한다:
+    /// PlayerState(Wallet/Inventory/EstateShop 소유, 로컬 JSON 동기화)를 통해 각 시스템을 배선한다:
     /// FishCaught→Inventory, Cooked 표시, RewardGranted→보상 지급, EstateManager.Bind.
+    /// 저장 파일은 Room Scenes(Fishing/HuntZone/EstateTemplate)와 공유 — 서로 오가며 이어짐.
     /// VR 입력 어댑터가 생기면 이 하네스의 버튼이 하던 호출(Cast/Reel/Cook/Place...)을 그쪽으로 옮긴다.
     /// OnGUI는 개발용 임시 — 제품 UI 아님 (Quest 빌드 전 제거 대상, unity-mobile-performance.md).
     /// </summary>
@@ -46,9 +48,8 @@ namespace CampLantern.Bootstrap
 
         private const string k_zoneId = "p0"; // 세션 룸: hunt_zone_p0 — 본체/더미가 같은 값 사용
 
-        private Wallet m_wallet;
-        private Inventory m_inventory;
-        private EstateShop m_shop;
+        private PlayerState m_state;
+        private ContentRegistry m_registry;
 
         private VoiceController m_voice; // m_launcher와 같은 GO에서 캐싱
         private PlayerMute m_mute;
@@ -71,11 +72,16 @@ namespace CampLantern.Bootstrap
 
         private void Awake()
         {
-            m_wallet    = new Wallet();
-            m_inventory = new Inventory();
-            m_shop      = new EstateShop(m_wallet, m_inventory);
+            m_registry = Resources.Load<ContentRegistry>("ContentRegistry");
+            if (m_registry == null)
+                Debug.LogError("[P0Harness] ContentRegistry 없음 — Tools > Make Assets > Content Registry 실행 필요");
 
-            if (m_startingCoins > 0) m_wallet.Add(m_startingCoins);
+            bool isNewSave = !SaveService.Exists(); // 최초 실행에만 시작 코인 지급 — 이후엔 저장값이 우선
+
+            m_state = new PlayerState();
+            if (m_registry != null) m_state.Load(m_registry);
+
+            if (isNewSave && m_startingCoins > 0) m_state.Wallet.Add(m_startingCoins);
 
             if (m_launcher != null)
             {
@@ -97,13 +103,27 @@ namespace CampLantern.Bootstrap
             // Push 초기화 원칙 (rules/scripts.md) — 데이터 소유자인 하네스가 준비된 뒤 주입
             if (m_pot != null)
             {
-                m_pot.Initialize(m_inventory); // 레시피/실패작은 씬에 세팅된 인스펙터 값 사용
+                m_pot.Initialize(m_state.Inventory); // 레시피/실패작은 씬에 세팅된 인스펙터 값 사용
                 m_pot.Cooked -= OnCooked;
                 m_pot.Cooked += OnCooked;
             }
 
             if (m_estateManager != null)
-                m_estateManager.Bind(m_shop);
+            {
+                m_estateManager.Bind(m_state.Shop);
+
+                // 저장된 배치를 복원 — 보유 목록(Shop.OwnedDefs)과 별개로 이미 배치된 것만 Place로 재현
+                if (m_registry != null)
+                {
+                    foreach (PlacedObjectSave saved in m_state.PendingPlacements)
+                    {
+                        if (m_registry.TryGetEstateObject(saved.DefId, out EstateObjectDef def))
+                            m_estateManager.Place(def, saved.Position, saved.Rotation);
+                        else
+                            Debug.LogWarning($"[P0Harness] 저장된 배치 오브젝트 Id를 찾을 수 없음: {saved.DefId}");
+                    }
+                }
+            }
         }
 
         private void OnDestroy()
@@ -117,6 +137,13 @@ namespace CampLantern.Bootstrap
             if (m_dummyRunner != null && m_dummyRunner.IsRunning)
                 m_dummyRunner.Shutdown();
             m_dummyRunner = null;
+
+            m_state?.Save(m_estateManager);
+        }
+
+        private void OnApplicationQuit()
+        {
+            m_state.Save(m_estateManager);
         }
 
         private void Update()
@@ -143,7 +170,7 @@ namespace CampLantern.Bootstrap
 
         private void OnFishCaught(FishDef fish)
         {
-            m_inventory.Add(fish); // FishDef는 ItemDef 파생 — 그대로 인벤토리 투입
+            m_state.Inventory.Add(fish); // FishDef는 ItemDef 파생 — 그대로 인벤토리 투입
             m_lastLog = $"낚음: {fish.DisplayName}";
         }
 
@@ -181,7 +208,7 @@ namespace CampLantern.Bootstrap
         {
             if (def.RewardMaterials == null) return;
             foreach (ItemDef material in def.RewardMaterials)
-                m_inventory.Add(material);
+                m_state.Inventory.Add(material);
             m_lastLog = $"사냥 보상 지급: {def.DisplayName}";
         }
 
@@ -274,7 +301,8 @@ namespace CampLantern.Bootstrap
         {
             m_scroll = GUILayout.BeginScrollView(m_scroll, GUILayout.Width(340), GUILayout.Height(Screen.height - 20));
 
-            GUILayout.Label($"[Camp Lantern P0]  코인: {m_wallet.Coins}  |  {m_lastLog}");
+            GUILayout.Label($"[Camp Lantern P0]  코인: {m_state.Wallet.Coins}  |  {m_lastLog}");
+            if (GUILayout.Button("저장")) { m_state.Save(m_estateManager); m_lastLog = "저장 완료"; }
             DrawFishing();
             DrawInventory();
             DrawCooking();
@@ -299,15 +327,15 @@ namespace CampLantern.Bootstrap
             GUILayout.Space(8);
             GUILayout.Label("── 인벤토리 ── (투입=냄비, 판매=코인)");
             // 버튼 콜백 중 Inventory가 변해 Dictionary가 수정되므로 스냅샷 순회
-            foreach (KeyValuePair<ItemDef, int> entry in new List<KeyValuePair<ItemDef, int>>(m_inventory.Items))
+            foreach (KeyValuePair<ItemDef, int> entry in new List<KeyValuePair<ItemDef, int>>(m_state.Inventory.Items))
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label($"{entry.Key.DisplayName} x{entry.Value}", GUILayout.Width(140));
                 if (GUILayout.Button("투입", GUILayout.Width(60)))
                     m_pot.TryAddIngredient(entry.Key);
                 if (GUILayout.Button($"판매 {entry.Key.SellPrice}c", GUILayout.Width(90)) &&
-                    m_inventory.TryRemove(entry.Key))
-                    m_wallet.Add(entry.Key.SellPrice);
+                    m_state.Inventory.TryRemove(entry.Key))
+                    m_state.Wallet.Add(entry.Key.SellPrice);
                 GUILayout.EndHorizontal();
             }
         }
@@ -342,8 +370,8 @@ namespace CampLantern.Bootstrap
                 else
                 {
                     if (GUILayout.Button("구매", GUILayout.Width(50)))
-                        m_lastLog = m_shop.TryPurchase(def) ? $"구매: {def.DisplayName}" : "구매 실패 (재화 부족)";
-                    int owned = m_shop.CountOwned(def);
+                        m_lastLog = m_state.Shop.TryPurchase(def) ? $"구매: {def.DisplayName}" : "구매 실패 (재화 부족)";
+                    int owned = m_state.Shop.CountOwned(def);
                     if (owned > 0 && GUILayout.Button($"배치({owned})", GUILayout.Width(70)))
                         TryPlace(def);
                 }
@@ -361,14 +389,14 @@ namespace CampLantern.Bootstrap
                 m_lastLog = "배치 실패 — 수용량 초과";
                 return;
             }
-            if (!m_shop.TryConsumeOwned(def)) return;
+            if (!m_state.Shop.TryConsumeOwned(def)) return;
 
             // 2m 간격 격자에 순서대로 배치 (P0 자유 배치 — 스냅은 P1)
             int index = m_estateManager.PlacedObjects.Count;
             Vector3 pos = m_placeOrigin + new Vector3((index % 4) * 2f, 0f, (index / 4) * 2f);
             PlacedObject placed = m_estateManager.Place(def, pos, Quaternion.identity);
             if (placed == null)
-                m_shop.ReturnOwned(def); // CanPlace 통과 후 실패는 도달 불가 — 방어적 반환
+                m_state.Shop.ReturnOwned(def); // CanPlace 통과 후 실패는 도달 불가 — 방어적 반환
             else
                 m_lastLog = $"배치: {def.DisplayName}";
         }
