@@ -225,6 +225,86 @@ namespace CampLantern.EditorTools
             }
         }
 
+        /// <summary>
+        /// QA — 요리 성공/실패 + 영지 수용량 경계를 자동 검증한다.
+        /// 성공: 붕어 2마리 투입 → 생선구이 획득, 재료 소모 확인.
+        /// 실패: 붕어 1마리(레시피 불일치) 투입 → 실패작(탄 음식) 획득 + Common 재료 소모 확인.
+        /// 수용량: CapacityMax까지 배치 반복 → 초과분은 CanPlace가 차단하는지 확인.
+        /// </summary>
+        [MenuItem("Tools/P0 Play Test/Run Cooking And Estate QA")]
+        public static async void RunCookingAndEstateQA()
+        {
+            var harness = Object.FindFirstObjectByType<P0Harness>();
+            var pot = Object.FindFirstObjectByType<CampLantern.Cooking.CookingPot>();
+            var estateManager = Object.FindFirstObjectByType<CampLantern.Estate.EstateManager>();
+            var registry = Resources.Load<CampLantern.Core.ContentRegistry>("ContentRegistry");
+            if (harness == null || pot == null || estateManager == null || registry == null)
+            {
+                Debug.LogError("[P0PlayTest] 하네스/CookingPot/EstateManager/레지스트리 없음");
+                return;
+            }
+
+            registry.TryGetItem("fish_crucian", out CampLantern.Core.ItemDef crucian);
+            registry.TryGetItem("item_grilled_fish", out CampLantern.Core.ItemDef grilledFish);
+            registry.TryGetItem("item_burnt_food", out CampLantern.Core.ItemDef burntFood);
+            if (crucian == null || grilledFish == null || burntFood == null)
+            {
+                Debug.LogError("[P0PlayTest] 요리 QA용 아이템 Id를 레지스트리에서 못 찾음 (fish_crucian/item_grilled_fish/item_burnt_food 확인)");
+                return;
+            }
+
+            var inv = harness.State.Inventory;
+
+            // ── 요리 성공 ──
+            inv.Add(crucian, 2);
+            pot.TryAddIngredient(crucian);
+            pot.TryAddIngredient(crucian);
+            int grilledBefore = inv.CountOf(grilledFish);
+            pot.Cook();
+            await Task.Delay(100);
+            bool cookSuccessPass = inv.CountOf(grilledFish) == grilledBefore + 1 && inv.CountOf(crucian) == 0;
+            Debug.LogWarning($"[P0PlayTest] 요리 성공 케이스: {(cookSuccessPass ? "PASS" : "FAIL")} " +
+                              $"(생선구이:{inv.CountOf(grilledFish)}, 남은붕어:{inv.CountOf(crucian)})");
+
+            // ── 요리 실패 (붕어 1개만 투입 — 레시피 불일치) ──
+            inv.Add(crucian, 1);
+            pot.TryAddIngredient(crucian);
+            int burntBefore = inv.CountOf(burntFood);
+            pot.Cook();
+            await Task.Delay(100);
+            bool cookFailPass = inv.CountOf(burntFood) == burntBefore + 1 && inv.CountOf(crucian) == 0;
+            Debug.LogWarning($"[P0PlayTest] 요리 실패 케이스: {(cookFailPass ? "PASS" : "FAIL")} " +
+                              $"(탄음식:{inv.CountOf(burntFood)}, 남은붕어:{inv.CountOf(crucian)})");
+
+            // ── 영지 수용량 경계 ──
+            registry.TryGetEstateObject("estate_lantern", out CampLantern.Core.EstateObjectDef lanternDef);
+            if (lanternDef == null)
+            {
+                Debug.LogError("[P0PlayTest] estate_lantern Def 없음");
+                return;
+            }
+
+            int capacityMax = estateManager.CapacityMax;
+            int weight = lanternDef.CapacityWeight;
+            int placedCount = 0;
+            harness.State.Wallet.Add(100000);
+            while (estateManager.CanPlace(lanternDef))
+            {
+                harness.State.Shop.TryPurchase(lanternDef);
+                harness.State.Shop.TryConsumeOwned(lanternDef);
+                var p = estateManager.Place(lanternDef, new Vector3(20f + placedCount, 0f, 20f), Quaternion.identity);
+                if (p == null) break; // 안전장치 — 무한루프 방지
+                placedCount++;
+                if (placedCount > 100) { Debug.LogError("[P0PlayTest] 배치 루프 100회 초과 — 중단"); break; }
+            }
+            bool overCapacityBlocked = !estateManager.CanPlace(lanternDef);
+            int expectedMaxCount = capacityMax / weight;
+            bool capacityPass = overCapacityBlocked && estateManager.CapacityUsed <= capacityMax &&
+                                 placedCount == expectedMaxCount;
+            Debug.LogWarning($"[P0PlayTest] 영지 수용량 경계: {(capacityPass ? "PASS" : "FAIL")} " +
+                              $"(배치수:{placedCount}, 기대치:{expectedMaxCount}, 사용량:{estateManager.CapacityUsed}/{capacityMax}, 초과차단:{overCapacityBlocked})");
+        }
+
         /// <summary>진단용 — 현재 인벤토리의 사슴 가죽/뿔 수량 즉시 보고.</summary>
         [MenuItem("Tools/P0 Play Test/Report Hide Count")]
         public static void ReportHideCount()
