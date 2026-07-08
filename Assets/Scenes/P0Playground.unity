@@ -585,6 +585,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &645425490 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5011340264180505222, guid: b3161e53f8b07b24993190979695fc96, type: 3}
+  m_PrefabInstance: {fileID: 1062830498}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df9f338034892c44ebb62d97894772f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Oculus.VR::OVRCameraRig
 --- !u!1 &851813885
 GameObject:
   m_ObjectHideFlags: 0
@@ -1077,9 +1088,10 @@ MonoBehaviour:
   _bodyTrackingMode: 0
   _useAsyncBodySolver: 0
   _enableHipLock: 0
-  _useOvrCameraRig: 0
+  _ovrCameraRig: {fileID: 645425490}
   _debugDrawTrackingLocations: 0
   HeadsetInputSimulator: {fileID: 0}
+  disableSampleSceneLocomotion: 0
 --- !u!1 &1620277099
 GameObject:
   m_ObjectHideFlags: 0
