@@ -71,6 +71,17 @@ Voice 2.63(Asset Store)은 Realtime **4** 기반인데 Fusion 2.1은 Realtime **
 - **씬 선행조건**: `OVRCameraRig`(VRPlayerRig, `AvatarBehaviourFusion`이 `OVRManager.instance`로 찾음) + `OvrAvatarManager`(Style2Meta) + `SampleInputManager`가 씬에 있어야 함. `P0Playground`에 `AvatarSystem` 하위로 배선됨.
 - 스폰 프리팹은 Fusion 프리팹 테이블에 있어야 함 — 임포트로 자동 베이킹되나 무음 실패 시 `Tools > Fusion > Rebuild Prefab Table`.
 
+### Meta XR Simulator — Activate 메뉴로만 켠다 (manifest 편집 금지) (2026-07-08 확정)
+헤드셋 없이 에디터에서 VR을 테스트하려면 시뮬레이터가 필수다(XR 런타임을 제공). 없으면 Play 진입 시 OpenXR가 HMD를 못 찾아 `XR_ERROR_FORM_FACTOR_UNAVAILABLE`로 실패한다.
+- **`Meta > Meta XR Simulator > Activate` 메뉴로 켠다.** 이 메뉴(Core SDK의 `MetaXRSimulator` 폴더 제공)가 `XR_SELECTED_RUNTIME_JSON`을 **standalone 설치본**(예: `C:\Program Files\MetaXRSimulator\vXXX\meta_openxr_simulator.json`)으로 설정한다. Play 검증은 브릿지로 `EditorApplication.ExecuteMenuItem("Meta/Meta XR Simulator/Activate")` 호출.
+- **manifest.json에 `com.meta.xr.simulator`를 직접 추가하지 마라 — 헛수고다.** 시뮬레이터가 standalone을 쓸 때, 자체 로직(`Meta.XR.Simulator.Editor.PackageManagerUtils.RemovePackageAsync`)이 "비활성인데 UPM 패키지가 있네" 하고 즉시 되돌려 제거한다. (2026-07-08 이걸로 한참 헤맴 — manifest 편집→자동 제거 반복.)
+- UPM 패키지를 manifest에서 빼도 시뮬레이터는 standalone으로 동작한다. 단 **제거 직후 Bee 빌드 캐시에 `MetaXrSimulator.Editor.asmdef` 참조가 남아 "Could not read file … asmdef"로 컴파일이 깨질 수 있음** → `CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`로 캐시 청소하면 해소.
+- 시뮬레이터 바이너리 미설치 시: `Edit > Preferences > Meta XR > Meta XR Simulator > Available Versions`에서 다운로드(자동 다운로드는 Meta CDN — 버전 안 받아지면 다른 버전 시도).
+
+### [후속 — 미완, 내일 착수] 아바타 프리셋 인덱스 제한
+`AvatarController`가 `LocalAvatarIndex = Random.Range(0, m_presetAvatarCount)`로 스폰하는데, **일부 인덱스가 Rift 프리셋(`4_rift.glb`)에 매핑돼 `AssetNotFound` + `ovrAvatar2 OvrAssert` 실패**가 난다 — 이 프로젝트는 Quest 프리셋(`PresetAvatars_Quest.zip`)만 임포트했기 때문. 아바타 자체는 렌더되지만 로그가 지저분하다.
+- **할 일**: LocalAvatarIndex를 Quest 프리셋에 매핑되는 값으로 제한하거나, `PresetAvatars_Rift`도 임포트할지 결정. (Play 검증 시 발견 — 2026-07-08)
+
 ## 숨은 규칙 / 암묵지
 - Meta Avatars SDK를 Asset Store에서 검색해도 안 뜨는 게 정상이다 (EOF라 검색 노출이 약함). `developers.meta.com/horizon/downloads/package/meta-avatars-sdk/`에서 직접 받아야 한다.
 - Fusion App ID와 Voice App ID는 **같은 `PhotonAppSettings` 에셋의 다른 필드**(App Id Fusion / App Id Voice)에 들어간다 — 별도 설정 파일이 아니다.

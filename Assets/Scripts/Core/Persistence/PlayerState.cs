@@ -77,6 +77,11 @@ namespace CampLantern.Core.Persistence
                 data.PlacedObjects.Clear();
                 foreach (PlacedObject placed in estateManager.PlacedObjects)
                 {
+                    // 씬 종료/티어다운 순서에 따라 배치 오브젝트가 먼저 파괴됐을 수 있다
+                    // (예: Play 종료 시 P0Harness.OnDestroy에서 Save 호출). Unity의 == null은
+                    // 파괴된 오브젝트도 잡아내므로 여기서 걸러 MissingReferenceException을 막는다.
+                    if (placed == null) continue;
+
                     data.PlacedObjects.Add(new PlacedObjectSave
                     {
                         DefId    = placed.Def.Id,
