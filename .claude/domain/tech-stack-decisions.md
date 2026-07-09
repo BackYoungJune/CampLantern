@@ -78,9 +78,12 @@ Voice 2.63(Asset Store)은 Realtime **4** 기반인데 Fusion 2.1은 Realtime **
 - UPM 패키지를 manifest에서 빼도 시뮬레이터는 standalone으로 동작한다. 단 **제거 직후 Bee 빌드 캐시에 `MetaXrSimulator.Editor.asmdef` 참조가 남아 "Could not read file … asmdef"로 컴파일이 깨질 수 있음** → `CompilationPipeline.RequestScriptCompilation(RequestScriptCompilationOptions.CleanBuildCache)`로 캐시 청소하면 해소.
 - 시뮬레이터 바이너리 미설치 시: `Edit > Preferences > Meta XR > Meta XR Simulator > Available Versions`에서 다운로드(자동 다운로드는 Meta CDN — 버전 안 받아지면 다른 버전 시도).
 
-### [후속 — 미완, 내일 착수] 아바타 프리셋 인덱스 제한
-`AvatarController`가 `LocalAvatarIndex = Random.Range(0, m_presetAvatarCount)`로 스폰하는데, **일부 인덱스가 Rift 프리셋(`4_rift.glb`)에 매핑돼 `AssetNotFound` + `ovrAvatar2 OvrAssert` 실패**가 난다 — 이 프로젝트는 Quest 프리셋(`PresetAvatars_Quest.zip`)만 임포트했기 때문. 아바타 자체는 렌더되지만 로그가 지저분하다.
-- **할 일**: LocalAvatarIndex를 Quest 프리셋에 매핑되는 값으로 제한하거나, `PresetAvatars_Rift`도 임포트할지 결정. (Play 검증 시 발견 — 2026-07-08)
+### 아바타 프리셋 로딩 — 빈 zip 이슈 (2026-07-09 해결)
+증상: 로컬 아바타 스폰 시 `{index}_{platform}.glb NotFound`(에디터=`_rift`, 기기=`_quest`) + `ovrAvatar2 OvrAssert` 실패. 아바타는 손/스켈레톤만 렌더되고 프리셋 몸체 로드 실패.
+- **진짜 원인**: rift/quest·인덱스 문제가 아니라, **SDK가 로드하는 `PresetAvatars_*.zip`이 전부 빈 zip(0KB)**이었다(어제 "인덱스 제한" 추정은 틀림). 프리셋 소스 .glb(33종, ~660MB)는 `SampleAssetsUnzipped/`에 풀려 있으나 **zip 패키징 단계(Preset Selector로 골라 Package)가 안 된 상태**. 런타임 로드 경로: `AvatarEntity.LoadLocalAvatar()` → `{LocalAvatarIndex}` + `GetPlatformGLBPostfix()`(에디터=rift) → `LoadAssets(..., AssetSource.Zip)` → 빈 zip에서 NotFound.
+- **정식 방법**: `MetaAvatarsSDK/Assets/Sample Assets/Preset Selector`로 소량 선택 → 패키징. (전체 `Package Presets`는 Standard Quest+Rift ~300MB라 과함. `RepackageWithPresetSelections(bool[] quality, bool[] avatars)`는 bool[] 배열 인자라 브릿지/리플렉션 자동화가 까다로움.)
+- **이번 처리**: 앞 8종(0~7) × Quest+Rift 소스 .glb를 직접 `PresetAvatars_Rift.zip`/`_Quest.zip`에 flat 엔트리(`4_rift.glb` 등, 로드 경로와 일치)로 넣어 소량 패키징(~73MB). 런타임이 `Added zip source .../PresetAvatars_Rift.zip`로 직접 읽어 정상 로드 확인(로그: `ClipUpgradeHelper hands_riftController`, NotFound 소멸).
+- **주의(대용량 미커밋)**: 채운 zip(35~38MB×2)과 `SampleAssetsUnzipped/`(660MB)는 저장소에 커밋하지 않는다. zip은 빈 상태로 이미 추적 중이라 `git update-index --assume-unchanged`로 로컬 변경을 숨김 — **팀원은 클론 후 빈 zip을 받으므로 각자 Preset Selector(또는 동일 수동 방식)로 채워야** 에디터 아바타가 뜬다. `AvatarController.m_presetAvatarCount`(현재 6)는 패키징한 개수(≤8) 이하로 유지.
 
 ## 숨은 규칙 / 암묵지
 - Meta Avatars SDK를 Asset Store에서 검색해도 안 뜨는 게 정상이다 (EOF라 검색 노출이 약함). `developers.meta.com/horizon/downloads/package/meta-avatars-sdk/`에서 직접 받아야 한다.
